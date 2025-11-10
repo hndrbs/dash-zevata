@@ -1,9 +1,4 @@
-import {
-  Link,
-  Outlet,
-  createFileRoute,
-  useLocation,
-} from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   BookOpen,
@@ -65,16 +60,7 @@ export const Route = createFileRoute('/$inv')({
 
 export default function InvLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const location = useLocation()
   const { inv } = Route.useParams()
-
-  const getActiveMenu = () => {
-    const currentPath = location.pathname
-    const activeItem = menuItems.find((item) => currentPath.includes(item.id))
-    return activeItem?.id || 'home'
-  }
-
-  const activeMenu = getActiveMenu()
 
   return (
     <div className="min-h-screen bg-base-100">
