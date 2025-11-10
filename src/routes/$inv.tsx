@@ -19,56 +19,49 @@ import {
   X,
 } from 'lucide-react'
 
-export const Route = createFileRoute('/$inv')({
-  component: InvLayout,
-})
-
-const menuItems = [
-  { id: 'home', label: 'Home', icon: Home, path: '/$id' },
+export const menuItems = [
+  { id: '', label: 'Home', icon: Home, path: '/$id' },
   {
     id: 'profile',
     label: 'Profile',
     icon: User,
-    path: '/$id/profile',
   },
   {
     id: 'events',
     label: 'Events',
     icon: Calendar,
-    path: '/$id/events',
   },
   {
     id: 'guests',
     label: 'Guests',
     icon: Users,
-    path: '/$id/guests',
   },
   {
-    id: 'galleries',
-    label: 'Galleries',
+    id: 'media',
+    label: 'Media',
     icon: Image,
-    path: '/$id/galleries',
   },
   {
     id: 'quotes',
     label: 'Quotes',
     icon: Quote,
-    path: '/$id/quotes',
   },
   {
     id: 'themes',
     label: 'Themes',
     icon: Palette,
-    path: '/$id/themes',
   },
-  { id: 'gifts', label: 'Gifts', icon: Gift, path: '/$id/gifts' },
+  { id: 'gifts', label: 'Gifts', icon: Gift },
   {
     id: 'stories',
     label: 'Stories',
     icon: BookOpen,
-    path: '/$id/stories',
   },
 ]
+
+export const Route = createFileRoute('/$inv')({
+  component: InvLayout,
+})
 
 export default function InvLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -137,7 +130,8 @@ export default function InvLayout() {
                 return (
                   <Link
                     key={item.id}
-                    to={item.path}
+                    to={item.id}
+                    from="/$inv"
                     params={{ inv }}
                     onClick={() => setIsDrawerOpen(false)}
                     className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
