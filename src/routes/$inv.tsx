@@ -79,7 +79,7 @@ export default function InvLayout() {
   return (
     <div className="min-h-screen bg-base-100">
       {/* Top Navigation */}
-      <div className="navbar bg-base-100 shadow-sm border-b">
+      <div className="navbar bg-base-100 shadow-sm border-b lg:hidden">
         <div className="flex-1">
           <button
             onClick={() => setIsDrawerOpen(true)}
@@ -111,7 +111,7 @@ export default function InvLayout() {
             onClick={() => setIsDrawerOpen(false)}
           ></label>
 
-          <div className="bg-base-200 min-h-screen w-80 p-4">
+          <div className="bg-base-200 min-h-screen w-48 p-4">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-bold">Dashboard</h2>
               <button
@@ -125,7 +125,6 @@ export default function InvLayout() {
             <nav className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon
-                const isActive = activeMenu === item.id
 
                 return (
                   <Link
@@ -134,11 +133,11 @@ export default function InvLayout() {
                     from="/$inv"
                     params={{ inv }}
                     onClick={() => setIsDrawerOpen(false)}
-                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-primary text-primary-content'
-                        : 'hover:bg-base-300'
-                    }`}
+                    activeProps={{
+                      className:
+                        item.id === '' ? '' : 'bg-primary text-primary-content',
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-lg transition-colors"
                   >
                     <Icon size={20} />
                     <span className="font-medium">{item.label}</span>
