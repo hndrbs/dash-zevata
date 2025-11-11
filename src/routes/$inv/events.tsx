@@ -1,7 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { Calendar, Clock, Edit, MapPin, Plus, Trash2, X } from 'lucide-react'
+import {
+  Calendar,
+  Clock,
+  Edit,
+  Loader2,
+  MapPin,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react'
+import { createEvent, deleteEvent, getEvents, updateEvent } from '../../lib/api'
+import type { Event as ApiEvent } from '../../lib/api'
 
 export const Route = createFileRoute('/$inv/events')({
   component: EventsPage,
@@ -21,34 +33,53 @@ type Event = {
 }
 
 function EventsPage() {
-  const [events, setEvents] = useState<Array<Event>>([
-    {
-      id: '1',
-      title: 'Akad Nikah',
-      date: '2024-12-25',
-      startTime: '08:00',
-      endTime: '10:00',
-      isIndefinite: false,
-      timezone: 'Asia/Jakarta',
-      address: 'Masjid Agung Surakarta, Jl. Slamet Riyadi, Surakarta',
-      mapLink: 'https://maps.google.com/?q=Masjid+Agung+Surakarta',
-      isMainEvent: true,
-    },
-    {
-      id: '2',
-      title: 'Resepsi',
-      date: '2024-12-25',
-      startTime: '18:00',
-      endTime: '',
-      isIndefinite: true,
-      timezone: 'Asia/Jakarta',
-      address: 'Ballroom Hotel Santika, Jl. Gatot Subroto, Surakarta',
-      mapLink: 'https://maps.google.com/?q=Hotel+Santika+Surakarta',
-      isMainEvent: false,
-    },
-  ])
+  const { inv } = Route.useParams()
+  const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
+
+  // Fetch events using TanStack Query
+  const {
+    data: events = [],
+    isLoading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['events', inv],
+    queryFn: () => getEvents(inv),
+  })
+
+  // Create event mutation
+  const createEventMutation = useMutation({
+    mutationFn: (eventData: Omit<ApiEvent, 'id'>) =>
+      createEvent(inv, eventData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events', inv] })
+      handleCloseModal()
+    },
+  })
+
+  // Update event mutation
+  const updateEventMutation = useMutation({
+    mutationFn: ({
+      eventId,
+      eventData,
+    }: {
+      eventId: string
+      eventData: Partial<ApiEvent>
+    }) => updateEvent(inv, eventId, eventData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events', inv] })
+      handleCloseModal()
+    },
+  })
+
+  // Delete event mutation
+  const deleteEventMutation = useMutation({
+    mutationFn: (eventId: string) => deleteEvent(inv, eventId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events', inv] })
+    },
+  })
 
   const form = useForm({
     defaultValues: {
@@ -63,22 +94,28 @@ function EventsPage() {
       isMainEvent: false,
     },
     onSubmit: ({ value }) => {
+      const eventData = {
+        invId: inv,
+        eventName: value.title,
+        eventDate: value.date,
+        startTime: value.startTime,
+        endTime: value.isIndefinite ? '' : value.endTime,
+        venue: value.address.split(',')[0] || value.address,
+        address: value.address,
+        googleMapsUrl: value.mapLink,
+        isMain: value.isMainEvent,
+      }
+
       if (editingEvent) {
         // Update existing event
-        setEvents(
-          events.map((e) =>
-            e.id === editingEvent.id ? { ...value, id: editingEvent.id } : e,
-          ),
-        )
+        updateEventMutation.mutate({
+          eventId: editingEvent.id,
+          eventData,
+        })
       } else {
         // Add new event
-        const newEvent: Event = {
-          ...value,
-          id: Date.now().toString(),
-        }
-        setEvents([...events, newEvent])
+        createEventMutation.mutate(eventData)
       }
-      handleCloseModal()
     },
   })
 
@@ -103,7 +140,9 @@ function EventsPage() {
   }
 
   const handleDeleteEvent = (eventId: string) => {
-    setEvents(events.filter((e) => e.id !== eventId))
+    if (confirm('Are you sure you want to delete this event?')) {
+      deleteEventMutation.mutate(eventId)
+    }
   }
 
   const handleCloseModal = () => {
@@ -153,7 +192,28 @@ function EventsPage() {
 
     return `${startTime} - ${endTime}`
   }
-  console.log(form.state.values.isIndefinite)
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-base-100 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin mx-auto mb-4" />
+          <p>Loading events...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (queryError) {
+    return (
+      <div className="min-h-screen bg-base-100 p-6 flex items-center justify-center">
+        <div className="text-center text-error">
+          <p>Error loading events: {queryError.message}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-base-100 p-6">
       <div className="flex justify-between items-center mb-8">
@@ -166,71 +226,92 @@ function EventsPage() {
 
       {/* Events List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {events.map((event) => (
-          <div key={event.id} className="card bg-base-200 shadow-sm">
-            <div className="card-body">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="card-title text-lg flex items-center gap-2">
-                    {event.title}
-                    {event.isMainEvent && (
-                      <span className="badge badge-primary">Main Event</span>
-                    )}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-base-content/70 mt-1">
-                    <Calendar size={16} />
-                    <span>
-                      {new Date(event.date).toLocaleDateString('id-ID')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-base-content/70 mt-1">
-                    <Clock size={16} />
-                    <span>
-                      {formatEventTime(event)} ({event.timezone})
-                    </span>
+        {events.map((apiEvent) => {
+          // Convert API event to local event format
+          const event: Event = {
+            id: apiEvent.id,
+            title: apiEvent.eventName,
+            date: apiEvent.eventDate,
+            startTime: apiEvent.startTime,
+            endTime: apiEvent.endTime,
+            isIndefinite: !apiEvent.endTime,
+            timezone: 'Asia/Jakarta', // Default timezone
+            address: apiEvent.address,
+            mapLink: apiEvent.googleMapsUrl,
+            isMainEvent: apiEvent.isMain,
+          }
+
+          return (
+            <div key={event.id} className="card bg-base-200 shadow-sm">
+              <div className="card-body">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="card-title text-lg flex items-center gap-2">
+                      {event.title}
+                      {event.isMainEvent && (
+                        <span className="badge badge-primary">Main Event</span>
+                      )}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-base-content/70 mt-1">
+                      <Calendar size={16} />
+                      <span>
+                        {new Date(event.date).toLocaleDateString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-base-content/70 mt-1">
+                      <Clock size={16} />
+                      <span>
+                        {formatEventTime(event)} ({event.timezone})
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {event.address && (
-                <div className="flex items-start gap-2 text-sm mb-3">
-                  <MapPin size={16} className="mt-0.5" />
-                  <span>{event.address}</span>
-                </div>
-              )}
+                {event.address && (
+                  <div className="flex items-start gap-2 text-sm mb-3">
+                    <MapPin size={16} className="mt-0.5" />
+                    <span>{event.address}</span>
+                  </div>
+                )}
 
-              {event.mapLink && (
-                <div className="mb-4">
-                  <a
-                    href={event.mapLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline text-sm"
+                {event.mapLink && (
+                  <div className="mb-4">
+                    <a
+                      href={event.mapLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline text-sm"
+                    >
+                      View on Map
+                    </a>
+                  </div>
+                )}
+
+                <div className="card-actions justify-end">
+                  <button
+                    onClick={() => handleEditEvent(event)}
+                    className="btn btn-ghost btn-sm"
                   >
-                    View on Map
-                  </a>
+                    <Edit size={16} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEvent(event.id)}
+                    className="btn btn-ghost btn-sm text-error"
+                    disabled={deleteEventMutation.isPending}
+                  >
+                    {deleteEventMutation.isPending ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                    Delete
+                  </button>
                 </div>
-              )}
-
-              <div className="card-actions justify-end">
-                <button
-                  onClick={() => handleEditEvent(event)}
-                  className="btn btn-ghost btn-sm"
-                >
-                  <Edit size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteEvent(event.id)}
-                  className="btn btn-ghost btn-sm text-error"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Add/Edit Event Modal */}
@@ -490,9 +571,24 @@ function EventsPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={form.state.canSubmit === false}
+                  disabled={
+                    form.state.canSubmit === false ||
+                    createEventMutation.isPending ||
+                    updateEventMutation.isPending
+                  }
                 >
-                  {editingEvent ? 'Update' : 'Add'} Event
+                  {createEventMutation.isPending ||
+                  updateEventMutation.isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                      {editingEvent ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : editingEvent ? (
+                    'Update'
+                  ) : (
+                    'Add'
+                  )}{' '}
+                  Event
                 </button>
               </div>
             </form>

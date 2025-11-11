@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar, ExternalLink, Users } from 'lucide-react'
+import { ExternalLink, Users } from 'lucide-react'
 import { get } from '../lib/api'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 
@@ -10,9 +10,7 @@ export const Route = createFileRoute('/')({
 
 type InvType = {
   id: string
-  mainEventDate: string
   slug: string
-  couple: string
 }
 
 function HomePage() {
@@ -89,33 +87,12 @@ function HomePage() {
               className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow"
             >
               <div className="card-body">
-                <h2 className="card-title text-2xl mb-2">
-                  {invitation.couple}
-                </h2>
-
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="text-primary" size={20} />
-                    <div>
-                      <p className="text-sm opacity-70">Event Date</p>
-                      <p className="font-medium">
-                        {new Date(invitation.mainEventDate).toLocaleDateString(
-                          'en-US',
-                          {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          },
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
                   <div className="flex items-center gap-3">
                     <Users className="text-secondary" size={20} />
                     <div>
-                      <p className="text-sm opacity-70">Invitation ID</p>
-                      <p className="font-mono text-sm">{invitation.id}</p>
+                      <p className="text-sm opacity-70">Slug</p>
+                      <p className="font-mono text-sm">{invitation.slug}</p>
                     </div>
                   </div>
                 </div>
@@ -127,7 +104,7 @@ function HomePage() {
                     className="btn btn-primary btn-sm"
                   >
                     <ExternalLink size={16} />
-                    Manage Dashboard
+                    Manage Invitation
                   </Link>
                 </div>
               </div>

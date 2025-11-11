@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { Edit, Loader2, Plus, Trash2, X } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
+import * as api from '../../lib/api'
 
 export const Route = createFileRoute('/$inv/profile')({
   component: ProfilePage,
@@ -23,40 +25,55 @@ type Profile = {
 }
 
 function ProfilePage() {
-  const [profiles, setProfiles] = useState<Array<Profile>>([
-    {
-      id: '1',
-      name: 'John Doe',
-      nickname: 'Johnny',
-      parentsName: 'Michael & Sarah Doe',
-      address: '123 Main Street, City',
-      otherInfo: 'Loves hiking and photography',
-      facebook: 'john.doe',
-      instagram: '@johndoe',
-      tiktok: '@johndoe',
-      twitter: '@johndoe',
-      photoUrl:
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      nickname: 'Janey',
-      parentsName: 'Robert & Lisa Smith',
-      address: '456 Oak Avenue, Town',
-      otherInfo: 'Enjoys cooking and traveling',
-      facebook: 'jane.smith',
-      instagram: '@janesmith',
-      tiktok: '@janesmith',
-      twitter: '@janesmith',
-      photoUrl:
-        'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-    },
-  ])
+  const { inv } = Route.useParams()
+  const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+
+  // Fetch profiles using TanStack Query
+  const {
+    data: profiles = [],
+    isLoading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['profiles', inv],
+    queryFn: () => api.getProfiles(inv),
+  })
+
+  // Create profile mutation
+  const createProfileMutation = useMutation({
+    mutationFn: (profileData: Omit<api.Profile, 'id'>) =>
+      api.createProfile(inv, profileData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles', inv] })
+      handleCloseModal()
+    },
+  })
+
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: ({
+      profileId,
+      profileData,
+    }: {
+      profileId: string
+      profileData: Partial<api.Profile>
+    }) => api.updateProfile(inv, profileId, profileData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles', inv] })
+      handleCloseModal()
+    },
+  })
+
+  // Delete profile mutation
+  const deleteProfileMutation = useMutation({
+    mutationFn: (profileId: string) => api.deleteProfile(inv, profileId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profiles', inv] })
+    },
+  })
 
   const form = useForm({
     defaultValues: {
@@ -90,26 +107,31 @@ function ProfilePage() {
         }
       }
 
+      const profileData = {
+        invId: inv,
+        name: value.name,
+        gender: 'Male' as const, // Default gender, you might want to add this to the form
+        shortName: value.nickname,
+        address: value.address || undefined,
+        otherInfo: value.otherInfo || undefined,
+        picture: photoUrl || undefined,
+        facebook: value.facebook || undefined,
+        instagram: value.instagram || undefined,
+        twitter: value.twitter || undefined,
+        tiktok: value.tiktok || undefined,
+      }
+
       if (editingProfile) {
         // Update existing profile
-        setProfiles(
-          profiles.map((p) =>
-            p.id === editingProfile.id
-              ? { ...value, photoUrl, id: editingProfile.id }
-              : p,
-          ),
-        )
+        updateProfileMutation.mutate({
+          profileId: editingProfile.id,
+          profileData,
+        })
       } else {
         // Add new profile
-        const newProfile: Profile = {
-          ...value,
-          photoUrl,
-          id: Date.now().toString(),
-        }
-        setProfiles([...profiles, newProfile])
+        createProfileMutation.mutate(profileData)
       }
       setIsUploading(false)
-      handleCloseModal()
     },
   })
 
@@ -136,7 +158,9 @@ function ProfilePage() {
   }
 
   const handleDeleteProfile = (profileId: string) => {
-    setProfiles(profiles.filter((p: Profile) => p.id !== profileId))
+    if (confirm('Are you sure you want to delete this profile?')) {
+      deleteProfileMutation.mutate(profileId)
+    }
   }
 
   const handleCloseModal = () => {
@@ -206,6 +230,27 @@ function ProfilePage() {
     setUploadError(error)
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-base-100 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={32} className="animate-spin mx-auto mb-4" />
+          <p>Loading profiles...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (queryError) {
+    return (
+      <div className="min-h-screen bg-base-100 p-6 flex items-center justify-center">
+        <div className="text-center text-error">
+          <p>Error loading profiles: {queryError.message}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-base-100 p-6">
       <div className="flex justify-between items-center mb-8">
@@ -222,26 +267,21 @@ function ProfilePage() {
           <div key={profile.id} className="card bg-base-200 shadow-sm">
             <div className="card-body">
               <div className="flex items-center gap-4 mb-4">
-                {profile.photoUrl && (
+                {profile.picture && (
                   <div className="avatar">
                     <div className="w-16 h-16 rounded-full">
-                      <img src={profile.photoUrl} alt={profile.name} />
+                      <img src={profile.picture} alt={profile.name} />
                     </div>
                   </div>
                 )}
                 <div className="flex-1">
                   <h3 className="card-title text-lg">{profile.name}</h3>
                   <p className="text-sm text-base-content/70">
-                    {profile.nickname}
+                    {profile.shortName}
                   </p>
                 </div>
               </div>
 
-              {profile.parentsName && (
-                <p className="text-sm mb-2">
-                  <strong>Parents:</strong> {profile.parentsName}
-                </p>
-              )}
               {profile.address && (
                 <p className="text-sm mb-2">
                   <strong>Address:</strong> {profile.address}
@@ -253,7 +293,20 @@ function ProfilePage() {
 
               <div className="card-actions justify-end">
                 <button
-                  onClick={() => handleEditProfile(profile)}
+                  onClick={() =>
+                    handleEditProfile({
+                      id: profile.id,
+                      name: profile.name,
+                      nickname: profile.shortName,
+                      address: profile.address,
+                      otherInfo: profile.otherInfo,
+                      facebook: profile.facebook,
+                      instagram: profile.instagram,
+                      tiktok: profile.tiktok,
+                      twitter: profile.twitter,
+                      photoUrl: profile.picture,
+                    })
+                  }
                   className="btn btn-ghost btn-sm"
                 >
                   <Edit size={16} />
@@ -262,8 +315,13 @@ function ProfilePage() {
                 <button
                   onClick={() => handleDeleteProfile(profile.id)}
                   className="btn btn-ghost btn-sm text-error"
+                  disabled={deleteProfileMutation.isPending}
                 >
-                  <Trash2 size={16} />
+                  {deleteProfileMutation.isPending ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
                   Delete
                 </button>
               </div>
@@ -358,26 +416,6 @@ function ProfilePage() {
                           </span>
                         </label>
                       )}
-                    </div>
-                  )}
-                />
-
-                {/* Parents Name Field */}
-                <form.Field
-                  name="parentsName"
-                  children={(field) => (
-                    <div className="form-control col-span-2">
-                      <label className="label">
-                        <span className="label-text">Parents Name</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter parents' names"
-                        className="input input-bordered w-full"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
                     </div>
                   )}
                 />
@@ -542,12 +580,23 @@ function ProfilePage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={form.state.canSubmit === false || isUploading}
+                  disabled={
+                    form.state.canSubmit === false ||
+                    isUploading ||
+                    createProfileMutation.isPending ||
+                    updateProfileMutation.isPending
+                  }
                 >
                   {isUploading ? (
                     <>
                       <Loader2 size={16} className="animate-spin mr-2" />
                       Uploading...
+                    </>
+                  ) : createProfileMutation.isPending ||
+                    updateProfileMutation.isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                      {editingProfile ? 'Updating...' : 'Creating...'}
                     </>
                   ) : editingProfile ? (
                     'Update'

@@ -1,6 +1,7 @@
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
+  ArrowLeft,
   BookOpen,
   Calendar,
   Gift,
@@ -109,6 +110,9 @@ export default function InvLayout() {
             </div>
 
             <nav className="space-y-2">
+              <Link to="/" className="flex items-center gap-3 p-3 rounded-lg">
+                <ArrowLeft size={20} /> Back
+              </Link>
               {menuItems.map((item) => {
                 const Icon = item.icon
 
