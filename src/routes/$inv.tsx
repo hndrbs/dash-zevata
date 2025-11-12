@@ -38,8 +38,8 @@ export const menuItems = [
     icon: Image,
   },
   {
-    id: 'quotes',
-    label: 'Quotes',
+    id: 'words',
+    label: 'Words',
     icon: Quote,
   },
   {

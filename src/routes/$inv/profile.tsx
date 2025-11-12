@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { Edit, Loader2, Plus, Trash2, X } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
-import * as api from '../../lib/api'
+import { del, get, post, put } from '../../lib/api'
+import type { Profile as ApiProfile } from '../../types/profile'
 
 export const Route = createFileRoute('/$inv/profile')({
   component: ProfilePage,
@@ -39,13 +40,13 @@ function ProfilePage() {
     error: queryError,
   } = useQuery({
     queryKey: ['profiles', inv],
-    queryFn: () => api.getProfiles(inv),
+    queryFn: () => get<Array<ApiProfile>>({ path: `invprofile/${inv}` }),
   })
 
   // Create profile mutation
   const createProfileMutation = useMutation({
-    mutationFn: (profileData: Omit<api.Profile, 'id'>) =>
-      api.createProfile(inv, profileData),
+    mutationFn: (profileData: Omit<ApiProfile, 'id'>) =>
+      post<ApiProfile>(`invprofile/${inv}`, profileData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles', inv] })
       handleCloseModal()
@@ -59,8 +60,8 @@ function ProfilePage() {
       profileData,
     }: {
       profileId: string
-      profileData: Partial<api.Profile>
-    }) => api.updateProfile(inv, profileId, profileData),
+      profileData: Partial<ApiProfile>
+    }) => put<ApiProfile>(`invprofile/${inv}/${profileId}`, profileData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles', inv] })
       handleCloseModal()
@@ -69,7 +70,7 @@ function ProfilePage() {
 
   // Delete profile mutation
   const deleteProfileMutation = useMutation({
-    mutationFn: (profileId: string) => api.deleteProfile(inv, profileId),
+    mutationFn: (profileId: string) => del(`invprofile/${inv}/${profileId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles', inv] })
     },

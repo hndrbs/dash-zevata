@@ -1,5 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Check, Edit, Plus, Trash2, Users, X } from 'lucide-react'
+import {
+  Edit,
+  MessageCircle,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+  X,
+} from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/$inv/guests/')({
@@ -9,12 +18,8 @@ export const Route = createFileRoute('/$inv/guests/')({
 type Guest = {
   id: string
   name: string
-  email: string
   phone: string
-  group: string
-  status: 'invited' | 'confirmed' | 'declined'
-  plusOne: boolean
-  dietaryRestrictions: string
+  status: 'invited' | 'confirmed' | 'maybe' | 'declined'
 }
 
 function GuestListPage() {
@@ -22,37 +27,33 @@ function GuestListPage() {
     {
       id: '1',
       name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+62 812-3456-7890',
-      group: 'Bride Family',
+      phone: '+6281234567890',
       status: 'confirmed',
-      plusOne: true,
-      dietaryRestrictions: 'Vegetarian',
     },
     {
       id: '2',
       name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '+62 813-4567-8901',
-      group: 'Groom Friends',
+      phone: '+6281345678901',
       status: 'invited',
-      plusOne: false,
-      dietaryRestrictions: '',
     },
     {
       id: '3',
       name: 'Michael Johnson',
-      email: 'michael@example.com',
-      phone: '+62 814-5678-9012',
-      group: 'Work Colleagues',
+      phone: '+6281456789012',
+      status: 'maybe',
+    },
+    {
+      id: '4',
+      name: 'Sarah Wilson',
+      phone: '+6281567890123',
       status: 'declined',
-      plusOne: false,
-      dietaryRestrictions: 'No seafood',
     },
   ])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
   const handleAddGuest = () => {
     setEditingGuest(null)
@@ -86,11 +87,51 @@ function GuestListPage() {
     setEditingGuest(null)
   }
 
+  const handleWhatsAppClick = (phone: string) => {
+    const message = 'Hello! This is regarding the wedding invitation.'
+    const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
+  }
+
+  const handleCSVImport = (csvText: string) => {
+    const lines = csvText.split('\n').filter((line) => line.trim())
+    const importedGuests: Array<Guest> = []
+
+    for (let i = 1; i < lines.length; i++) {
+      // Skip header
+      const [name, phone] = lines[i].split(',')
+      if (name && phone) {
+        importedGuests.push({
+          id: Date.now().toString() + i,
+          name: name.trim(),
+          phone: phone.trim(),
+          status: 'invited',
+        })
+      }
+    }
+
+    setGuests([...guests, ...importedGuests])
+    setIsImportModalOpen(false)
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const csvText = e.target?.result as string
+        handleCSVImport(csvText)
+      }
+      reader.readAsText(file)
+    }
+  }
+
   const getStatusBadge = (status: Guest['status']) => {
     const statusConfig = {
       invited: { class: 'badge-warning', label: 'Invited' },
       confirmed: { class: 'badge-success', label: 'Confirmed' },
-      declined: { class: 'badge-error', label: 'Declined' },
+      maybe: { class: 'badge-info', label: 'Maybe' },
+      declined: { class: 'badge-error', label: 'Not Coming' },
     }
     const config = statusConfig[status]
     return <span className={`badge ${config.class}`}>{config.label}</span>
@@ -100,11 +141,17 @@ function GuestListPage() {
     const counts = {
       total: guests.length,
       confirmed: guests.filter((g) => g.status === 'confirmed').length,
-      invited: guests.filter((g) => g.status === 'invited').length,
+      maybe: guests.filter((g) => g.status === 'maybe').length,
       declined: guests.filter((g) => g.status === 'declined').length,
     }
     return counts
   }
+
+  const filteredGuests = guests.filter(
+    (guest) =>
+      guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      guest.phone.includes(searchTerm),
+  )
 
   const statusCounts = getStatusCounts()
 
@@ -112,10 +159,19 @@ function GuestListPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Guest List</h2>
-        <button onClick={handleAddGuest} className="btn btn-primary">
-          <Plus size={20} />
-          Add Guest
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="btn btn-outline"
+          >
+            <Upload size={20} />
+            Import CSV
+          </button>
+          <button onClick={handleAddGuest} className="btn btn-primary">
+            <Plus size={20} />
+            Add Guest
+          </button>
+        </div>
       </div>
 
       {/* Status Summary */}
@@ -131,20 +187,37 @@ function GuestListPage() {
           </div>
         </div>
         <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-title">Invited</div>
-          <div className="stat-value text-warning">{statusCounts.invited}</div>
+          <div className="stat-title">Maybe</div>
+          <div className="stat-value text-info">{statusCounts.maybe}</div>
         </div>
         <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-title">Declined</div>
+          <div className="stat-title">Not Coming</div>
           <div className="stat-value text-error">{statusCounts.declined}</div>
         </div>
       </div>
 
-      {guests.length === 0 ? (
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/50"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Search by name or phone number..."
+            className="input input-bordered w-full pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {filteredGuests.length === 0 ? (
         <div className="text-center py-12">
           <Users size={64} className="mx-auto mb-4 text-base-content/50" />
           <p className="text-base-content/70 text-lg mb-4">
-            No guests added yet
+            {searchTerm ? 'No guests found' : 'No guests added yet'}
           </p>
           <button onClick={handleAddGuest} className="btn btn-primary">
             <Plus size={20} />
@@ -158,46 +231,29 @@ function GuestListPage() {
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Contact</th>
-                  <th>Group</th>
+                  <th>Phone Number</th>
                   <th>Status</th>
-                  <th>Plus One</th>
-                  <th className="w-20">Actions</th>
+                  <th className="w-32">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {guests.map((guest) => (
+                {filteredGuests.map((guest) => (
                   <tr
                     key={guest.id}
                     className="hover:bg-base-200 transition-colors"
                   >
-                    <td>
-                      <div className="font-medium">{guest.name}</div>
-                      {guest.dietaryRestrictions && (
-                        <div className="text-xs text-base-content/60">
-                          {guest.dietaryRestrictions}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <div className="text-sm">{guest.email}</div>
-                      <div className="text-xs text-base-content/60">
-                        {guest.phone}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="badge badge-outline">{guest.group}</div>
-                    </td>
+                    <td className="font-medium">{guest.name}</td>
+                    <td>{guest.phone}</td>
                     <td>{getStatusBadge(guest.status)}</td>
                     <td>
-                      {guest.plusOne ? (
-                        <Check size={16} className="text-success" />
-                      ) : (
-                        <X size={16} className="text-base-content/40" />
-                      )}
-                    </td>
-                    <td>
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => handleWhatsAppClick(guest.phone)}
+                          className="btn btn-ghost btn-sm text-success"
+                          title="Send WhatsApp Message"
+                        >
+                          <MessageCircle size={16} />
+                        </button>
                         <button
                           onClick={() => handleEditGuest(guest)}
                           className="btn btn-ghost btn-sm"
@@ -231,6 +287,73 @@ function GuestListPage() {
           }}
         />
       )}
+
+      {/* Import CSV Modal */}
+      {isImportModalOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Import Guests from CSV</h3>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="btn btn-ghost btn-sm"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-base-content/70">
+                  Upload a CSV file with columns: Name, Phone
+                </p>
+                <button
+                  onClick={() => {
+                    const csvContent =
+                      'Name,Phone\nJohn Doe,+6281234567890\nJane Smith,+6281345678901'
+                    const blob = new Blob([csvContent], { type: 'text/csv' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'guests_example.csv'
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                    URL.revokeObjectURL(url)
+                  }}
+                  className="btn btn-outline btn-sm"
+                >
+                  Download Example CSV
+                </button>
+              </div>
+              <div className="border-2 border-dashed border-base-300 rounded-lg p-6 text-center">
+                <Upload
+                  size={48}
+                  className="mx-auto mb-4 text-base-content/50"
+                />
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="file-input file-input-bordered w-full"
+                />
+                <p className="text-sm text-base-content/60 mt-2">
+                  Supported format: CSV with Name,Phone columns
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-action">
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="btn btn-ghost"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -244,26 +367,25 @@ type GuestModalProps = {
 function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
   const [formData, setFormData] = useState({
     name: guest?.name || '',
-    email: guest?.email || '',
     phone: guest?.phone || '',
-    group: guest?.group || 'Friends',
     status: guest?.status || 'invited',
-    plusOne: guest?.plusOne || false,
-    dietaryRestrictions: guest?.dietaryRestrictions || '',
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.name.trim() || !formData.phone.trim()) {
+      return
+    }
     onSave(formData)
   }
 
-  const handleChange = (field: string, value: string | boolean) => {
+  const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl">
+      <div className="modal-box">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold">
             {guest ? 'Edit Guest' : 'Add Guest'}
@@ -274,7 +396,7 @@ function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="form-control">
               <label className="label block">
                 <span className="label-text">Name *</span>
@@ -291,46 +413,16 @@ function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
 
             <div className="form-control">
               <label className="label block">
-                <span className="label-text">Email</span>
-              </label>
-              <input
-                type="email"
-                placeholder="email@example.com"
-                className="input input-bordered"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label block">
-                <span className="label-text">Phone</span>
+                <span className="label-text">Phone Number *</span>
               </label>
               <input
                 type="tel"
-                placeholder="+62 812-3456-7890"
+                placeholder="+6281234567890"
                 className="input input-bordered"
                 value={formData.phone}
                 onChange={(e) => handleChange('phone', e.target.value)}
+                required
               />
-            </div>
-
-            <div className="form-control">
-              <label className="label block">
-                <span className="label-text">Group</span>
-              </label>
-              <select
-                className="select select-bordered"
-                value={formData.group}
-                onChange={(e) => handleChange('group', e.target.value)}
-              >
-                <option value="Bride Family">Bride Family</option>
-                <option value="Groom Family">Groom Family</option>
-                <option value="Friends">Friends</option>
-                <option value="Work Colleagues">Work Colleagues</option>
-                <option value="Relatives">Relatives</option>
-                <option value="Others">Others</option>
-              </select>
             </div>
 
             <div className="form-control">
@@ -346,35 +438,9 @@ function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
               >
                 <option value="invited">Invited</option>
                 <option value="confirmed">Confirmed</option>
-                <option value="declined">Declined</option>
+                <option value="maybe">Maybe</option>
+                <option value="declined">Not Coming</option>
               </select>
-            </div>
-
-            <div className="form-control">
-              <label className="label cursor-pointer justify-start gap-3">
-                <input
-                  type="checkbox"
-                  className="checkbox"
-                  checked={formData.plusOne}
-                  onChange={(e) => handleChange('plusOne', e.target.checked)}
-                />
-                <span className="label-text">Plus One Allowed</span>
-              </label>
-            </div>
-
-            <div className="form-control md:col-span-2">
-              <label className="label block">
-                <span className="label-text">Dietary Restrictions</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Vegetarian, No seafood, Gluten-free"
-                className="input input-bordered"
-                value={formData.dietaryRestrictions}
-                onChange={(e) =>
-                  handleChange('dietaryRestrictions', e.target.value)
-                }
-              />
             </div>
           </div>
 

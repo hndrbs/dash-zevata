@@ -12,9 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as InvRouteImport } from './routes/$inv'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvIndexRouteImport } from './routes/$inv/index'
+import { Route as InvWordsRouteImport } from './routes/$inv/words'
 import { Route as InvThemesRouteImport } from './routes/$inv/themes'
 import { Route as InvStoriesRouteImport } from './routes/$inv/stories'
-import { Route as InvQuotesRouteImport } from './routes/$inv/quotes'
 import { Route as InvProfileRouteImport } from './routes/$inv/profile'
 import { Route as InvMediaRouteImport } from './routes/$inv/media'
 import { Route as InvGuestsRouteImport } from './routes/$inv/guests'
@@ -42,6 +42,11 @@ const InvIndexRoute = InvIndexRouteImport.update({
   path: '/',
   getParentRoute: () => InvRoute,
 } as any)
+const InvWordsRoute = InvWordsRouteImport.update({
+  id: '/words',
+  path: '/words',
+  getParentRoute: () => InvRoute,
+} as any)
 const InvThemesRoute = InvThemesRouteImport.update({
   id: '/themes',
   path: '/themes',
@@ -50,11 +55,6 @@ const InvThemesRoute = InvThemesRouteImport.update({
 const InvStoriesRoute = InvStoriesRouteImport.update({
   id: '/stories',
   path: '/stories',
-  getParentRoute: () => InvRoute,
-} as any)
-const InvQuotesRoute = InvQuotesRouteImport.update({
-  id: '/quotes',
-  path: '/quotes',
   getParentRoute: () => InvRoute,
 } as any)
 const InvProfileRoute = InvProfileRouteImport.update({
@@ -121,9 +121,9 @@ export interface FileRoutesByFullPath {
   '/$inv/guests': typeof InvGuestsRouteWithChildren
   '/$inv/media': typeof InvMediaRouteWithChildren
   '/$inv/profile': typeof InvProfileRoute
-  '/$inv/quotes': typeof InvQuotesRoute
   '/$inv/stories': typeof InvStoriesRoute
   '/$inv/themes': typeof InvThemesRoute
+  '/$inv/words': typeof InvWordsRoute
   '/$inv/': typeof InvIndexRoute
   '/$inv/guests/wishes': typeof InvGuestsWishesRoute
   '/$inv/media/music': typeof InvMediaMusicRoute
@@ -137,9 +137,9 @@ export interface FileRoutesByTo {
   '/$inv/events': typeof InvEventsRoute
   '/$inv/gifts': typeof InvGiftsRoute
   '/$inv/profile': typeof InvProfileRoute
-  '/$inv/quotes': typeof InvQuotesRoute
   '/$inv/stories': typeof InvStoriesRoute
   '/$inv/themes': typeof InvThemesRoute
+  '/$inv/words': typeof InvWordsRoute
   '/$inv': typeof InvIndexRoute
   '/$inv/guests/wishes': typeof InvGuestsWishesRoute
   '/$inv/media/music': typeof InvMediaMusicRoute
@@ -157,9 +157,9 @@ export interface FileRoutesById {
   '/$inv/guests': typeof InvGuestsRouteWithChildren
   '/$inv/media': typeof InvMediaRouteWithChildren
   '/$inv/profile': typeof InvProfileRoute
-  '/$inv/quotes': typeof InvQuotesRoute
   '/$inv/stories': typeof InvStoriesRoute
   '/$inv/themes': typeof InvThemesRoute
+  '/$inv/words': typeof InvWordsRoute
   '/$inv/': typeof InvIndexRoute
   '/$inv/guests/wishes': typeof InvGuestsWishesRoute
   '/$inv/media/music': typeof InvMediaMusicRoute
@@ -178,9 +178,9 @@ export interface FileRouteTypes {
     | '/$inv/guests'
     | '/$inv/media'
     | '/$inv/profile'
-    | '/$inv/quotes'
     | '/$inv/stories'
     | '/$inv/themes'
+    | '/$inv/words'
     | '/$inv/'
     | '/$inv/guests/wishes'
     | '/$inv/media/music'
@@ -194,9 +194,9 @@ export interface FileRouteTypes {
     | '/$inv/events'
     | '/$inv/gifts'
     | '/$inv/profile'
-    | '/$inv/quotes'
     | '/$inv/stories'
     | '/$inv/themes'
+    | '/$inv/words'
     | '/$inv'
     | '/$inv/guests/wishes'
     | '/$inv/media/music'
@@ -213,9 +213,9 @@ export interface FileRouteTypes {
     | '/$inv/guests'
     | '/$inv/media'
     | '/$inv/profile'
-    | '/$inv/quotes'
     | '/$inv/stories'
     | '/$inv/themes'
+    | '/$inv/words'
     | '/$inv/'
     | '/$inv/guests/wishes'
     | '/$inv/media/music'
@@ -253,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvIndexRouteImport
       parentRoute: typeof InvRoute
     }
+    '/$inv/words': {
+      id: '/$inv/words'
+      path: '/words'
+      fullPath: '/$inv/words'
+      preLoaderRoute: typeof InvWordsRouteImport
+      parentRoute: typeof InvRoute
+    }
     '/$inv/themes': {
       id: '/$inv/themes'
       path: '/themes'
@@ -265,13 +272,6 @@ declare module '@tanstack/react-router' {
       path: '/stories'
       fullPath: '/$inv/stories'
       preLoaderRoute: typeof InvStoriesRouteImport
-      parentRoute: typeof InvRoute
-    }
-    '/$inv/quotes': {
-      id: '/$inv/quotes'
-      path: '/quotes'
-      fullPath: '/$inv/quotes'
-      preLoaderRoute: typeof InvQuotesRouteImport
       parentRoute: typeof InvRoute
     }
     '/$inv/profile': {
@@ -392,9 +392,9 @@ interface InvRouteChildren {
   InvGuestsRoute: typeof InvGuestsRouteWithChildren
   InvMediaRoute: typeof InvMediaRouteWithChildren
   InvProfileRoute: typeof InvProfileRoute
-  InvQuotesRoute: typeof InvQuotesRoute
   InvStoriesRoute: typeof InvStoriesRoute
   InvThemesRoute: typeof InvThemesRoute
+  InvWordsRoute: typeof InvWordsRoute
   InvIndexRoute: typeof InvIndexRoute
 }
 
@@ -404,9 +404,9 @@ const InvRouteChildren: InvRouteChildren = {
   InvGuestsRoute: InvGuestsRouteWithChildren,
   InvMediaRoute: InvMediaRouteWithChildren,
   InvProfileRoute: InvProfileRoute,
-  InvQuotesRoute: InvQuotesRoute,
   InvStoriesRoute: InvStoriesRoute,
   InvThemesRoute: InvThemesRoute,
+  InvWordsRoute: InvWordsRoute,
   InvIndexRoute: InvIndexRoute,
 }
 

@@ -12,8 +12,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { createEvent, deleteEvent, getEvents, updateEvent } from '../../lib/api'
-import type { Event as ApiEvent } from '../../lib/api'
+import { del, get, post, put } from '../../lib/api'
+import type { Event as ApiEvent } from '../../types/event'
 
 export const Route = createFileRoute('/$inv/events')({
   component: EventsPage,
@@ -45,13 +45,13 @@ function EventsPage() {
     error: queryError,
   } = useQuery({
     queryKey: ['events', inv],
-    queryFn: () => getEvents(inv),
+    queryFn: () => get<Array<ApiEvent>>({ path: `event/${inv}` }),
   })
 
   // Create event mutation
   const createEventMutation = useMutation({
     mutationFn: (eventData: Omit<ApiEvent, 'id'>) =>
-      createEvent(inv, eventData),
+      post<ApiEvent>(`event/${inv}`, eventData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events', inv] })
       handleCloseModal()
@@ -66,7 +66,7 @@ function EventsPage() {
     }: {
       eventId: string
       eventData: Partial<ApiEvent>
-    }) => updateEvent(inv, eventId, eventData),
+    }) => put<ApiEvent>(`event/${inv}/${eventId}`, eventData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events', inv] })
       handleCloseModal()
@@ -75,7 +75,7 @@ function EventsPage() {
 
   // Delete event mutation
   const deleteEventMutation = useMutation({
-    mutationFn: (eventId: string) => deleteEvent(inv, eventId),
+    mutationFn: (eventId: string) => del(`event/${inv}/${eventId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events', inv] })
     },
