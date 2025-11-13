@@ -16,10 +16,10 @@ function MediaPage() {
 
   const tabs = [
     {
-      id: '',
+      id: 'galery',
       label: 'Galleries',
       icon: Image,
-      path: '/$inv/media',
+      path: '/$inv/media/gallery',
     },
     {
       id: 'music',

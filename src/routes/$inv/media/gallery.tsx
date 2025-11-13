@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Image, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-export const Route = createFileRoute('/$inv/media/')({
+export const Route = createFileRoute('/$inv/media/gallery')({
   component: GalleriesPage,
 })
 

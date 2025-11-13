@@ -92,7 +92,7 @@ function LoveStoriesPage() {
     setEditingStory(story)
     form.setFieldValue('title', story.title)
     form.setFieldValue('storyContent', story.storyContent)
-    form.setFieldValue('storyDate', story.storyDate.toISOString().split('T')[0])
+    form.setFieldValue('storyDate', String(story.storyDate).split('T')[0])
     setIsModalOpen(true)
   }
 
@@ -135,7 +135,7 @@ function LoveStoriesPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Heart className="w-8 h-8 text-accent" />
-            Our Love Stories
+            Our Stories
           </h1>
           <p className="text-base-content/70 mt-2">
             Share and cherish your special moments together
@@ -230,7 +230,6 @@ function LoveStoriesPage() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <h2>ASu</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()

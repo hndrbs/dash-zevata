@@ -41,15 +41,17 @@ export function ZevataTextArea({
   className = '',
   rows = 4,
 }: ZevataTextAreaProps) {
+  const id = `textarea-${Math.random().toString(36).substring(2, 9)}`
   return (
-    <div className={`md:col-end-2 ${className}`}>
-      <label className="label block">
+    <div className={`md:col-span-2 ${className}`}>
+      <label className="label block" htmlFor={id}>
         <span className="label-text">
           {label}
           {required && ' *'}
         </span>
       </label>
       <textarea
+        id={id}
         placeholder={placeholder}
         className="textarea textarea-bordered w-full textarea-primary"
         value={field.state.value}

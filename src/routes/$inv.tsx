@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 
 export const menuItems = [
-  { id: '', label: 'Home', icon: Home, path: '/$id' },
+  { id: '', label: 'Home', icon: Home },
   {
     id: 'profile',
     label: 'Profile',
@@ -33,7 +33,7 @@ export const menuItems = [
     icon: Users,
   },
   {
-    id: 'media',
+    id: 'media/gallery',
     label: 'Media',
     icon: Image,
   },
@@ -47,9 +47,9 @@ export const menuItems = [
     label: 'Themes',
     icon: Palette,
   },
-  { id: 'gifts', label: 'Gifts', icon: Gift },
+  { id: 'gifts/transfer', label: 'Gifts', icon: Gift },
   {
-    id: 'stories',
+    id: 'lovestories',
     label: 'Stories',
     icon: BookOpen,
   },

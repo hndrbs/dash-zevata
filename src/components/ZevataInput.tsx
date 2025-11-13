@@ -43,7 +43,7 @@ export function ZevataInput({
 }: ZevataInputProps) {
   const id = `input-${Math.random().toString(36).substring(2, 9)}`
   return (
-    <div className={`md:col-span-1 ${className}`}>
+    <div className={className || 'md:col-span-1'}>
       <label className="label block" htmlFor={id}>
         <span className="label-text">
           {label}
