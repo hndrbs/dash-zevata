@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useForm } from '@tanstack/react-form'
 import {
   Edit,
   MessageCircle,
@@ -9,7 +11,8 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { ZevataInput } from '../../../components/ZevataInput'
+import { ZevataSelect } from '../../../components/ZevataSelect'
 
 export const Route = createFileRoute('/$inv/guests/')({
   component: GuestListPage,
@@ -164,7 +167,7 @@ function GuestListPage() {
             onClick={() => setIsImportModalOpen(true)}
             className="btn btn-outline"
           >
-            <Upload size={20} />
+            <Plus size={16} />
             Import CSV
           </button>
           <button onClick={handleAddGuest} className="btn btn-primary">
@@ -365,23 +368,19 @@ type GuestModalProps = {
 }
 
 function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
-  const [formData, setFormData] = useState({
-    name: guest?.name || '',
-    phone: guest?.phone || '',
-    status: guest?.status || 'invited',
+  const form = useForm({
+    defaultValues: {
+      name: guest?.name || '',
+      phone: guest?.phone || '',
+      status: guest?.status || 'invited',
+    },
+    onSubmit: ({ value }) => {
+      if (!value.name.trim() || !value.phone.trim()) {
+        return
+      }
+      onSave(value)
+    },
   })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formData.name.trim() || !formData.phone.trim()) {
-      return
-    }
-    onSave(formData)
-  }
-
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
 
   return (
     <div className="modal modal-open">
@@ -395,52 +394,66 @@ function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
+          }}
+        >
           <div className="space-y-4">
-            <div className="form-control">
-              <label className="label block">
-                <span className="label-text">Name *</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Full name"
-                className="input input-bordered"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                required
+            {/* Text Inputs - Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form.Field
+                name="name"
+                validators={{
+                  onChange: ({ value }) =>
+                    !value ? 'Name is required' : undefined,
+                }}
+                children={(field) => (
+                  <ZevataInput
+                    field={field}
+                    label="Name"
+                    type="text"
+                    placeholder="Full name"
+                    required
+                  />
+                )}
               />
-            </div>
 
-            <div className="form-control">
-              <label className="label block">
-                <span className="label-text">Phone Number *</span>
-              </label>
-              <input
-                type="tel"
-                placeholder="+6281234567890"
-                className="input input-bordered"
-                value={formData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
-                required
+              <form.Field
+                name="phone"
+                validators={{
+                  onChange: ({ value }) =>
+                    !value ? 'Phone number is required' : undefined,
+                }}
+                children={(field) => (
+                  <ZevataInput
+                    field={field}
+                    label="Phone Number"
+                    type="tel"
+                    placeholder="+6281234567890"
+                    required
+                  />
+                )}
               />
-            </div>
 
-            <div className="form-control">
-              <label className="label block">
-                <span className="label-text">Status</span>
-              </label>
-              <select
-                className="select select-bordered"
-                value={formData.status}
-                onChange={(e) =>
-                  handleChange('status', e.target.value as Guest['status'])
-                }
-              >
-                <option value="invited">Invited</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="maybe">Maybe</option>
-                <option value="declined">Not Coming</option>
-              </select>
+              <form.Field
+                name="status"
+                children={(field) => (
+                  <ZevataSelect
+                    field={field}
+                    label="Status"
+                    options={[
+                      { value: 'invited', label: 'Invited' },
+                      { value: 'confirmed', label: 'Confirmed' },
+                      { value: 'maybe', label: 'Maybe' },
+                      { value: 'declined', label: 'Not Coming' },
+                    ]}
+                    className="md:col-span-2"
+                  />
+                )}
+              />
             </div>
           </div>
 

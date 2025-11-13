@@ -15,25 +15,25 @@ function HomeDashboard() {
       label: 'View Count',
       value: '1,234',
       icon: Eye,
-      color: 'bg-blue-500',
+      color: 'bg-primary',
     },
     {
       label: 'Guest Invited',
       value: '89',
       icon: Users,
-      color: 'bg-green-500',
+      color: 'bg-success',
     },
     {
       label: 'Guest Confirmation',
       value: '67',
       icon: CheckCircle,
-      color: 'bg-purple-500',
+      color: 'bg-secondary',
     },
     {
       label: 'Wish Count',
       value: '45',
       icon: Heart,
-      color: 'bg-pink-500',
+      color: 'bg-accent',
     },
   ]
 

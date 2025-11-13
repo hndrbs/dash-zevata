@@ -17,6 +17,7 @@ import { Route as InvThemesRouteImport } from './routes/$inv/themes'
 import { Route as InvStoriesRouteImport } from './routes/$inv/stories'
 import { Route as InvProfileRouteImport } from './routes/$inv/profile'
 import { Route as InvMediaRouteImport } from './routes/$inv/media'
+import { Route as InvLovestoriesRouteImport } from './routes/$inv/lovestories'
 import { Route as InvGuestsRouteImport } from './routes/$inv/guests'
 import { Route as InvGiftsRouteImport } from './routes/$inv/gifts'
 import { Route as InvEventsRouteImport } from './routes/$inv/events'
@@ -65,6 +66,11 @@ const InvProfileRoute = InvProfileRouteImport.update({
 const InvMediaRoute = InvMediaRouteImport.update({
   id: '/media',
   path: '/media',
+  getParentRoute: () => InvRoute,
+} as any)
+const InvLovestoriesRoute = InvLovestoriesRouteImport.update({
+  id: '/lovestories',
+  path: '/lovestories',
   getParentRoute: () => InvRoute,
 } as any)
 const InvGuestsRoute = InvGuestsRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/$inv/events': typeof InvEventsRoute
   '/$inv/gifts': typeof InvGiftsRoute
   '/$inv/guests': typeof InvGuestsRouteWithChildren
+  '/$inv/lovestories': typeof InvLovestoriesRoute
   '/$inv/media': typeof InvMediaRouteWithChildren
   '/$inv/profile': typeof InvProfileRoute
   '/$inv/stories': typeof InvStoriesRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$inv/events': typeof InvEventsRoute
   '/$inv/gifts': typeof InvGiftsRoute
+  '/$inv/lovestories': typeof InvLovestoriesRoute
   '/$inv/profile': typeof InvProfileRoute
   '/$inv/stories': typeof InvStoriesRoute
   '/$inv/themes': typeof InvThemesRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/$inv/events': typeof InvEventsRoute
   '/$inv/gifts': typeof InvGiftsRoute
   '/$inv/guests': typeof InvGuestsRouteWithChildren
+  '/$inv/lovestories': typeof InvLovestoriesRoute
   '/$inv/media': typeof InvMediaRouteWithChildren
   '/$inv/profile': typeof InvProfileRoute
   '/$inv/stories': typeof InvStoriesRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/$inv/events'
     | '/$inv/gifts'
     | '/$inv/guests'
+    | '/$inv/lovestories'
     | '/$inv/media'
     | '/$inv/profile'
     | '/$inv/stories'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$inv/events'
     | '/$inv/gifts'
+    | '/$inv/lovestories'
     | '/$inv/profile'
     | '/$inv/stories'
     | '/$inv/themes'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/$inv/events'
     | '/$inv/gifts'
     | '/$inv/guests'
+    | '/$inv/lovestories'
     | '/$inv/media'
     | '/$inv/profile'
     | '/$inv/stories'
@@ -286,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/$inv/media'
       preLoaderRoute: typeof InvMediaRouteImport
+      parentRoute: typeof InvRoute
+    }
+    '/$inv/lovestories': {
+      id: '/$inv/lovestories'
+      path: '/lovestories'
+      fullPath: '/$inv/lovestories'
+      preLoaderRoute: typeof InvLovestoriesRouteImport
       parentRoute: typeof InvRoute
     }
     '/$inv/guests': {
@@ -390,6 +409,7 @@ interface InvRouteChildren {
   InvEventsRoute: typeof InvEventsRoute
   InvGiftsRoute: typeof InvGiftsRoute
   InvGuestsRoute: typeof InvGuestsRouteWithChildren
+  InvLovestoriesRoute: typeof InvLovestoriesRoute
   InvMediaRoute: typeof InvMediaRouteWithChildren
   InvProfileRoute: typeof InvProfileRoute
   InvStoriesRoute: typeof InvStoriesRoute
@@ -402,6 +422,7 @@ const InvRouteChildren: InvRouteChildren = {
   InvEventsRoute: InvEventsRoute,
   InvGiftsRoute: InvGiftsRoute,
   InvGuestsRoute: InvGuestsRouteWithChildren,
+  InvLovestoriesRoute: InvLovestoriesRoute,
   InvMediaRoute: InvMediaRouteWithChildren,
   InvProfileRoute: InvProfileRoute,
   InvStoriesRoute: InvStoriesRoute,

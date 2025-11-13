@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { Edit, Loader2, Plus, Trash2, X } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
+import { ZevataInput } from '../../components/ZevataInput'
+import { ZevataTextArea } from '../../components/ZevataTextArea'
 import { del, get, post, put } from '../../lib/api'
 import type { Profile as ApiProfile } from '../../types/profile'
 
@@ -354,113 +356,81 @@ function ProfilePage() {
                 form.handleSubmit()
               }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Name Field */}
-                <form.Field
-                  name="name"
-                  validators={{
-                    onChange: ({ value }) => {
-                      if (!value) return 'Name is required'
-                      return undefined
-                    },
-                  }}
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Name *</span>
-                      </label>
-                      <input
+              <div className="space-y-4">
+                {/* Text Inputs - Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {/* Name Field */}
+                  <form.Field
+                    name="name"
+                    validators={{
+                      onChange: ({ value }) => {
+                        if (!value) return 'Name is required'
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Name"
                         type="text"
                         placeholder="Enter full name"
-                        className="input input-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        required
                       />
-                      {field.state.meta.errors.length > 0 && (
-                        <label className="label">
-                          <span className="label-text-alt text-error">
-                            {field.state.meta.errors.join(', ')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  )}
-                />
+                    )}
+                  />
 
-                {/* Nickname Field */}
-                <form.Field
-                  name="nickname"
-                  validators={{
-                    onChange: ({ value }) => {
-                      if (!value) return 'Nickname is required'
-                      return undefined
-                    },
-                  }}
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Nickname *</span>
-                      </label>
-                      <input
+                  {/* Nickname Field */}
+                  <form.Field
+                    name="nickname"
+                    validators={{
+                      onChange: ({ value }) => {
+                        if (!value) return 'Nickname is required'
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Nickname"
                         type="text"
                         placeholder="Enter nickname"
-                        className="input input-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        required
                       />
-                      {field.state.meta.errors.length > 0 && (
-                        <label className="label">
-                          <span className="label-text-alt text-error">
-                            {field.state.meta.errors.join(', ')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  )}
-                />
+                    )}
+                  />
+                </div>
 
-                {/* Address Field */}
+                {/* Textarea - Always Full Width */}
                 <form.Field
                   name="address"
                   children={(field) => (
-                    <div className="col-span-2 w-full">
-                      <label className="label block">
-                        <span className="label-text">Address</span>
-                      </label>
-                      <textarea
-                        placeholder="Enter address"
-                        className="textarea textarea-bordered w-full"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                    </div>
+                    <ZevataTextArea
+                      field={field}
+                      label="Address"
+                      placeholder="Enter address"
+                    />
                   )}
                 />
 
-                {/* Other Info Field */}
-                <form.Field
-                  name="otherInfo"
-                  children={(field) => (
-                    <div className="form-control md:col-span-2">
-                      <label className="label">
-                        <span className="label-text">Other Info</span>
-                      </label>
-                      <input
+                {/* Text Inputs - Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Other Info Field */}
+                  <form.Field
+                    name="otherInfo"
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Other Info"
+                        type="text"
                         placeholder="Enter additional information"
-                        className="input input-bordered w-full"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        className="md:col-span-2"
                       />
-                    </div>
-                  )}
-                />
+                    )}
+                  />
+                </div>
 
                 {/* Social Media Fields */}
-                <div className="md:col-span-2">
+                <div>
                   <h4 className="text-lg font-semibold mb-3">
                     Social Media (Optional)
                   </h4>
@@ -468,84 +438,56 @@ function ProfilePage() {
                     <form.Field
                       name="facebook"
                       children={(field) => (
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text">Facebook</span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Facebook username"
-                            className="input input-bordered"
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                          />
-                        </div>
+                        <ZevataInput
+                          field={field}
+                          label="Facebook"
+                          type="text"
+                          placeholder="Facebook username"
+                        />
                       )}
                     />
 
                     <form.Field
                       name="instagram"
                       children={(field) => (
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text">Instagram</span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Instagram username"
-                            className="input input-bordered"
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                          />
-                        </div>
+                        <ZevataInput
+                          field={field}
+                          label="Instagram"
+                          type="text"
+                          placeholder="Instagram username"
+                        />
                       )}
                     />
 
                     <form.Field
                       name="tiktok"
                       children={(field) => (
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text">TikTok</span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="TikTok username"
-                            className="input input-bordered"
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                          />
-                        </div>
+                        <ZevataInput
+                          field={field}
+                          label="TikTok"
+                          type="text"
+                          placeholder="TikTok username"
+                        />
                       )}
                     />
 
                     <form.Field
                       name="twitter"
                       children={(field) => (
-                        <div className="form-control">
-                          <label className="label">
-                            <span className="label-text">X (Twitter)</span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Twitter username"
-                            className="input input-bordered"
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                          />
-                        </div>
+                        <ZevataInput
+                          field={field}
+                          label="X (Twitter)"
+                          type="text"
+                          placeholder="Twitter username"
+                        />
                       )}
                     />
                   </div>
                 </div>
 
-                {/* Photo Upload Field */}
-                <div className="form-control md:col-span-2">
-                  <label className="label">
+                {/* File Input - Always Full Width */}
+                <div className="form-control">
+                  <label className="label block">
                     <span className="label-text">Profile Photo</span>
                   </label>
                   <PhotoUpload

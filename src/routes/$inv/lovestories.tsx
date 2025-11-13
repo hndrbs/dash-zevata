@@ -1,16 +1,18 @@
 import { useForm } from '@tanstack/react-form'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, Calendar, Edit, Plus, Trash2, X } from 'lucide-react'
+import { Edit, Heart, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { del, get, post, put } from '../../lib/api'
+import { ZevataInput } from '../../components/ZevataInput'
+import { ZevataTextArea } from '../../components/ZevataTextArea'
 import type { LoveStory } from '../../types/lovestory'
 
-export const Route = createFileRoute('/$inv/stories')({
-  component: StoriesPage,
+export const Route = createFileRoute('/$inv/lovestories')({
+  component: LoveStoriesPage,
 })
 
-function StoriesPage() {
+function LoveStoriesPage() {
   const { inv } = Route.useParams()
   const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -63,7 +65,7 @@ function StoriesPage() {
     defaultValues: {
       title: '',
       storyContent: '',
-      storyDate: new Date(),
+      storyDate: new Date().toISOString().split('T')[0],
       invId: inv,
       createdAt: new Date(),
     },
@@ -90,7 +92,7 @@ function StoriesPage() {
     setEditingStory(story)
     form.setFieldValue('title', story.title)
     form.setFieldValue('storyContent', story.storyContent)
-    form.setFieldValue('storyDate', new Date(story.storyDate))
+    form.setFieldValue('storyDate', story.storyDate.toISOString().split('T')[0])
     setIsModalOpen(true)
   }
 
@@ -132,7 +134,7 @@ function StoriesPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <BookOpen className="w-8 h-8 text-primary" />
+            <Heart className="w-8 h-8 text-accent" />
             Our Love Stories
           </h1>
           <p className="text-base-content/70 mt-2">
@@ -151,7 +153,7 @@ function StoriesPage() {
 
       {stories.length === 0 ? (
         <div className="text-center py-12">
-          <BookOpen className="w-16 h-16 text-base-content/30 mx-auto mb-4" />
+          <Heart className="w-16 h-16 text-base-content/30 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-base-content/60 mb-2">
             No love stories yet
           </h3>
@@ -175,12 +177,9 @@ function StoriesPage() {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="card-title text-xl">{story.title}</h3>
-                    <div className="flex items-center gap-2 text-sm text-base-content/60 mt-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {new Date(story.storyDate).toLocaleDateString()}
-                      </span>
-                    </div>
+                    <p className="text-base-content/60 text-sm">
+                      {new Date(story.storyDate).toLocaleDateString()}
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -231,7 +230,7 @@ function StoriesPage() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-
+            <h2>ASu</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -239,85 +238,42 @@ function StoriesPage() {
                 form.handleSubmit()
               }}
             >
-              <div className="space-y-4">
-                {/* Text Inputs - Grid Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <form.Field
-                    name="title"
-                    validators={{
-                      onChange: ({ value }) =>
-                        !value ? 'Title is required' : undefined,
-                    }}
-                  >
-                    {(field) => (
-                      <div className="form-control md:col-span-2">
-                        <label className="label block">
-                          <span className="label-text">Title *</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter a title for your love story..."
-                          className="input input-bordered"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                        />
-                        {field.state.meta.errors.length > 0 && (
-                          <label className="label block">
-                            <span className="label-text-alt text-error">
-                              {field.state.meta.errors.join(', ')}
-                            </span>
-                          </label>
-                        )}
-                      </div>
-                    )}
-                  </form.Field>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <form.Field
+                  name="title"
+                  validators={{
+                    onChange: ({ value }) =>
+                      !value ? 'Title is required' : undefined,
+                  }}
+                >
+                  {(field) => (
+                    <ZevataInput
+                      field={field}
+                      label="Title"
+                      type="text"
+                      placeholder="Enter a title for your love story..."
+                      required
+                    />
+                  )}
+                </form.Field>
 
-                  <form.Field
-                    name="storyDate"
-                    validators={{
-                      onChange: ({ value }) => {
-                        const date =
-                          value instanceof Date ? value : new Date(value)
-                        return isNaN(date.getTime())
-                          ? 'Story date is required'
-                          : undefined
-                      },
-                    }}
-                  >
-                    {(field) => (
-                      <div className="form-control md:col-span-2">
-                        <label className="label block">
-                          <span className="label-text">Story Date *</span>
-                        </label>
-                        <input
-                          type="date"
-                          className="input input-bordered"
-                          value={
-                            field.state.value instanceof Date
-                              ? field.state.value.toISOString().split('T')[0]
-                              : new Date(field.state.value)
-                                  .toISOString()
-                                  .split('T')[0]
-                          }
-                          onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(new Date(e.target.value))
-                          }
-                        />
-                        {field.state.meta.errors.length > 0 && (
-                          <label className="label block">
-                            <span className="label-text-alt text-error">
-                              {field.state.meta.errors.join(', ')}
-                            </span>
-                          </label>
-                        )}
-                      </div>
-                    )}
-                  </form.Field>
-                </div>
+                <form.Field
+                  name="storyDate"
+                  validators={{
+                    onChange: ({ value }) =>
+                      !value ? 'Story date is required' : undefined,
+                  }}
+                >
+                  {(field) => (
+                    <ZevataInput
+                      field={field}
+                      label="Story Date"
+                      type="date"
+                      required
+                    />
+                  )}
+                </form.Field>
 
-                {/* Textarea - Always Full Width */}
                 <form.Field
                   name="storyContent"
                   validators={{
@@ -326,25 +282,13 @@ function StoriesPage() {
                   }}
                 >
                   {(field) => (
-                    <div className="form-control">
-                      <label className="label block">
-                        <span className="label-text">Story Content *</span>
-                      </label>
-                      <textarea
-                        placeholder="Share your beautiful story..."
-                        className="textarea textarea-bordered h-32"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                      {field.state.meta.errors.length > 0 && (
-                        <label className="label block">
-                          <span className="label-text-alt text-error">
-                            {field.state.meta.errors.join(', ')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
+                    <ZevataTextArea
+                      field={field}
+                      label="Story Content"
+                      placeholder="Share your beautiful story..."
+                      rows={6}
+                      required
+                    />
                   )}
                 </form.Field>
               </div>

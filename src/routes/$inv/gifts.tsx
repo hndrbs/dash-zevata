@@ -1,8 +1,11 @@
-import { useForm } from '@tanstack/react-form'
 import { createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit, GiftIcon, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useForm } from '@tanstack/react-form'
+import { Edit, GiftIcon, Plus, Trash2, X } from 'lucide-react'
+import { ZevataInput } from '../../components/ZevataInput'
+import { ZevataSelect } from '../../components/ZevataSelect'
+import { ZevataTextArea } from '../../components/ZevataTextArea'
 import { del, get, post, put } from '../../lib/api'
 import { GiftType } from '../../types/gift'
 import type { Gift } from '../../types/gift'
@@ -302,175 +305,116 @@ function GiftsPage() {
                 }}
               >
                 <div className="space-y-4">
-                  {/* Gift Type Field */}
-                  <form.Field
-                    name="giftType"
-                    children={(field) => (
-                      <div className="form-control">
-                        <label className="label block">
-                          <span className="label-text">Gift Type *</span>
-                        </label>
-                        <select
-                          className="select select-bordered"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(
-                              Number(e.target.value) as GiftType,
-                            )
+                  {/* Text Inputs - Grid Layout */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {/* Gift Type Field */}
+                    <form.Field
+                      name="giftType"
+                      children={(field) => (
+                        <ZevataSelect
+                          field={field}
+                          label="Gift Type"
+                          options={[
+                            { value: '1', label: 'Money Transfer' },
+                            { value: '2', label: 'Package Delivery' },
+                          ]}
+                          required
+                        />
+                      )}
+                    />
+
+                    {/* Method Field */}
+                    <form.Field
+                      name="method"
+                      validators={{
+                        onChange: ({ value }) => {
+                          if (!value) return 'Method is required'
+                          return undefined
+                        },
+                      }}
+                      children={(field) => (
+                        <ZevataSelect
+                          field={field}
+                          label="Method"
+                          options={
+                            form.state.values.giftType === GiftType.Transfer
+                              ? transferMethods.map((method) => ({
+                                  value: method,
+                                  label: method,
+                                }))
+                              : packageMethods.map((method) => ({
+                                  value: method,
+                                  label: method,
+                                }))
                           }
-                        >
-                          <option value="1">Money Transfer</option>
-                          <option value="2">Package Delivery</option>
-                        </select>
-                      </div>
-                    )}
-                  />
+                          placeholder="Select method..."
+                          required
+                        />
+                      )}
+                    />
 
-                  {/* Method Field */}
-                  <form.Field
-                    name="method"
-                    validators={{
-                      onChange: ({ value }) => {
-                        if (!value) return 'Method is required'
-                        return undefined
-                      },
-                    }}
-                    children={(field) => (
-                      <div className="form-control">
-                        <label className="label block">
-                          <span className="label-text">Method *</span>
-                        </label>
-                        <select
-                          className="select select-bordered"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                        >
-                          <option value="">Select method...</option>
-                          {form.state.values.giftType === GiftType.Transfer
-                            ? transferMethods.map((method) => (
-                                <option key={method} value={method}>
-                                  {method}
-                                </option>
-                              ))
-                            : packageMethods.map((method) => (
-                                <option key={method} value={method}>
-                                  {method}
-                                </option>
-                              ))}
-                        </select>
-                        {field.state.meta.errors.length > 0 && (
-                          <label className="label">
-                            <span className="label-text-alt text-error">
-                              {field.state.meta.errors.join(', ')}
-                            </span>
-                          </label>
-                        )}
-                      </div>
-                    )}
-                  />
-
-                  {/* To Person Field */}
-                  <form.Field
-                    name="toPerson"
-                    validators={{
-                      onChange: ({ value }) => {
-                        if (!value) return 'Recipient name is required'
-                        return undefined
-                      },
-                    }}
-                    children={(field) => (
-                      <div className="form-control">
-                        <label className="label block">
-                          <span className="label-text">Recipient Name *</span>
-                        </label>
-                        <input
+                    {/* To Person Field */}
+                    <form.Field
+                      name="toPerson"
+                      validators={{
+                        onChange: ({ value }) => {
+                          if (!value) return 'Recipient name is required'
+                          return undefined
+                        },
+                      }}
+                      children={(field) => (
+                        <ZevataInput
+                          field={field}
+                          label="Recipient Name"
                           type="text"
                           placeholder="e.g., John & Jane, Bride & Groom"
-                          className="input input-bordered"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
+                          required
                         />
-                        {field.state.meta.errors.length > 0 && (
-                          <label className="label">
-                            <span className="label-text-alt text-error">
-                              {field.state.meta.errors.join(', ')}
-                            </span>
-                          </label>
-                        )}
-                      </div>
-                    )}
-                  />
+                      )}
+                    />
 
-                  {/* To Target ID Field */}
-                  <form.Field
-                    name="toTargetId"
-                    validators={{
-                      onChange: ({ value }) => {
-                        if (!value) return 'Target information is required'
-                        return undefined
-                      },
-                    }}
-                    children={(field) => (
-                      <div className="form-control">
-                        <label className="label block">
-                          <span className="label-text">
-                            {form.state.values.giftType === GiftType.Transfer
-                              ? 'Account/Number *'
-                              : 'Delivery Address *'}
-                          </span>
-                        </label>
-                        {form.state.values.giftType === GiftType.Transfer ? (
-                          <input
+                    {/* To Target ID Field */}
+                    <form.Field
+                      name="toTargetId"
+                      validators={{
+                        onChange: ({ value }) => {
+                          if (!value) return 'Target information is required'
+                          return undefined
+                        },
+                      }}
+                      children={(field) =>
+                        form.state.values.giftType === GiftType.Transfer ? (
+                          <ZevataInput
+                            field={field}
+                            label="Account/Number"
                             type="text"
                             placeholder="e.g., 1234567890, 081234567890"
-                            className="input input-bordered"
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
+                            required
                           />
                         ) : (
-                          <textarea
+                          <ZevataTextArea
+                            field={field}
+                            label="Delivery Address"
                             placeholder="Enter complete delivery address"
-                            className="textarea textarea-bordered"
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
+                            className="md:col-span-2"
                             rows={3}
+                            required
                           />
-                        )}
-                        {field.state.meta.errors.length > 0 && (
-                          <label className="label">
-                            <span className="label-text-alt text-error">
-                              {field.state.meta.errors.join(', ')}
-                            </span>
-                          </label>
-                        )}
-                      </div>
-                    )}
-                  />
+                        )
+                      }
+                    />
+                  </div>
 
-                  {/* Thank You Note Field */}
+                  {/* Textarea - Always Full Width */}
                   <form.Field
                     name="thankYouNote"
                     children={(field) => (
-                      <div className="form-control">
-                        <label className="label block">
-                          <span className="label-text">
-                            Thank You Note (Optional)
-                          </span>
-                        </label>
-                        <textarea
-                          placeholder="Custom thank you message for this gift option"
-                          className="textarea textarea-bordered"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          rows={3}
-                        />
-                      </div>
+                      <ZevataTextArea
+                        field={field}
+                        label="Thank You Note (Optional)"
+                        placeholder="Custom thank you message for this gift option"
+                        rows={3}
+                      />
                     )}
                   />
                 </div>

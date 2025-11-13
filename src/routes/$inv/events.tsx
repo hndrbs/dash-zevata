@@ -2,16 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import {
-  Calendar,
-  Clock,
-  Edit,
-  Loader2,
-  MapPin,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react'
+import { Calendar, Clock, Edit, MapPin, Plus, Trash2, X } from 'lucide-react'
+import { ZevataInput } from '../../components/ZevataInput'
+import { ZevataSelect } from '../../components/ZevataSelect'
+import { ZevataTextArea } from '../../components/ZevataTextArea'
 import { del, get, post, put } from '../../lib/api'
 import type { Event as ApiEvent } from '../../types/event'
 
@@ -197,7 +191,7 @@ function EventsPage() {
     return (
       <div className="min-h-screen bg-base-100 p-6 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={32} className="animate-spin mx-auto mb-4" />
+          <span className="loading loading-spinner loading-lg mx-auto mb-4"></span>
           <p>Loading events...</p>
         </div>
       </div>
@@ -301,7 +295,7 @@ function EventsPage() {
                     disabled={deleteEventMutation.isPending}
                   >
                     {deleteEventMutation.isPending ? (
-                      <Loader2 size={16} className="animate-spin" />
+                      <span className="loading loading-spinner loading-sm"></span>
                     ) : (
                       <Trash2 size={16} />
                     )}
@@ -337,153 +331,101 @@ function EventsPage() {
                 form.handleSubmit()
               }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Title Field */}
-                <form.Field
-                  name="title"
-                  validators={{
-                    onChange: ({ value }) => {
-                      if (!value) return 'Title is required'
-                      return undefined
-                    },
-                  }}
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label block">
-                        <span className="label-text">Title *</span>
-                      </label>
-                      <input
+              <div className="space-y-4">
+                {/* Text Inputs - Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Title Field */}
+                  <form.Field
+                    name="title"
+                    validators={{
+                      onChange: ({ value }) => {
+                        if (!value) return 'Title is required'
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Title"
                         type="text"
                         placeholder="Enter event title"
-                        className="input input-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        required
                       />
-                      {field.state.meta.errors.length > 0 && (
-                        <label className="label">
-                          <span className="label-text-alt text-error">
-                            {field.state.meta.errors.join(', ')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  )}
-                />
+                    )}
+                  />
 
-                {/* Date Field */}
-                <form.Field
-                  name="date"
-                  validators={{
-                    onChange: ({ value }) => {
-                      if (!value) return 'Date is required'
-                      return undefined
-                    },
-                  }}
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Date *</span>
-                      </label>
-                      <input
+                  {/* Date Field */}
+                  <form.Field
+                    name="date"
+                    validators={{
+                      onChange: ({ value }) => {
+                        if (!value) return 'Date is required'
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Date"
                         type="date"
-                        className="input input-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        required
                       />
-                      {field.state.meta.errors.length > 0 && (
-                        <label className="label">
-                          <span className="label-text-alt text-error">
-                            {field.state.meta.errors.join(', ')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  )}
-                />
+                    )}
+                  />
 
-                {/* Timezone Field */}
-                <form.Field
-                  name="timezone"
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Timezone</span>
-                      </label>
-                      <select
-                        className="select select-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      >
-                        {timezones.map((tz) => (
-                          <option key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                />
+                  {/* Timezone Field */}
+                  <form.Field
+                    name="timezone"
+                    children={(field) => (
+                      <ZevataSelect
+                        field={field}
+                        label="Timezone"
+                        options={timezones}
+                        placeholder="Select timezone..."
+                      />
+                    )}
+                  />
 
-                {/* Start Time Field */}
-                <form.Field
-                  name="startTime"
-                  validators={{
-                    onChange: ({ value }) => {
-                      if (!value) return 'Start time is required'
-                      return undefined
-                    },
-                  }}
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">Start Time *</span>
-                      </label>
-                      <input
+                  {/* Start Time Field */}
+                  <form.Field
+                    name="startTime"
+                    validators={{
+                      onChange: ({ value }) => {
+                        if (!value) return 'Start time is required'
+                        return undefined
+                      },
+                    }}
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Start Time"
                         type="time"
-                        className="input input-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        required
                       />
-                      {field.state.meta.errors.length > 0 && (
-                        <label className="label">
-                          <span className="label-text-alt text-error">
-                            {field.state.meta.errors.join(', ')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                  )}
-                />
+                    )}
+                  />
 
-                {/* End Time Field */}
-                <form.Field
-                  name="endTime"
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">End Time</span>
-                      </label>
-                      <input
+                  {/* End Time Field */}
+                  <form.Field
+                    name="endTime"
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="End Time"
                         type="time"
-                        className="input input-bordered disabled:bg-base-300"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        disabled={form.state.values.isIndefinite}
+                        className="disabled:bg-base-300"
                       />
-                    </div>
-                  )}
-                />
+                    )}
+                  />
 
-                {/* Indefinite Checkbox */}
+                  {/* Indefinite Checkbox */}
+                </div>
+
+                {/* Checkboxes - Always Full Width */}
                 <form.Field
                   name="isIndefinite"
                   children={(field) => (
-                    <div className="form-control md:col-span-2">
+                    <div className="form-control">
                       <label className="label cursor-pointer justify-start gap-3">
                         <input
                           type="checkbox"
@@ -499,50 +441,42 @@ function EventsPage() {
                 />
 
                 {/* Address Field */}
+                {/* Textarea - Always Full Width */}
                 <form.Field
                   name="address"
                   children={(field) => (
-                    <div className="form-control col-span-2">
-                      <label className="label block">
-                        <span className="label-text">Address</span>
-                      </label>
-                      <textarea
-                        placeholder="Enter event address"
-                        className="textarea textarea-bordered w-full"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        rows={3}
-                      />
-                    </div>
+                    <ZevataTextArea
+                      field={field}
+                      label="Address"
+                      placeholder="Enter event address"
+                      rows={3}
+                    />
                   )}
                 />
 
                 {/* Map Link Field */}
-                <form.Field
-                  name="mapLink"
-                  children={(field) => (
-                    <div className="form-control md:col-span-2">
-                      <label className="label block">
-                        <span className="label-text">Map Link</span>
-                      </label>
-                      <input
+                {/* Text Inputs - Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <form.Field
+                    name="mapLink"
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Map Link"
                         type="url"
                         placeholder="https://maps.google.com/..."
-                        className="input input-bordered w-full"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        className="md:col-span-2"
                       />
-                    </div>
-                  )}
-                />
+                    )}
+                  />
+                </div>
 
                 {/* Main Event Checkbox */}
+                {/* Checkboxes - Always Full Width */}
                 <form.Field
                   name="isMainEvent"
                   children={(field) => (
-                    <div className="form-control md:col-span-2">
+                    <div className="form-control">
                       <label className="label cursor-pointer justify-start gap-3">
                         <input
                           type="checkbox"
@@ -580,7 +514,7 @@ function EventsPage() {
                   {createEventMutation.isPending ||
                   updateEventMutation.isPending ? (
                     <>
-                      <Loader2 size={16} className="animate-spin mr-2" />
+                      <span className="loading loading-spinner loading-sm mr-2"></span>
                       {editingEvent ? 'Updating...' : 'Creating...'}
                     </>
                   ) : editingEvent ? (

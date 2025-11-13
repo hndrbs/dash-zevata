@@ -4,6 +4,9 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit, Plus, Quote, Trash2, X } from 'lucide-react'
 import { del, get, post, put } from '../../lib/api'
+import { ZevataInput } from '../../components/ZevataInput'
+import { ZevataSelect } from '../../components/ZevataSelect'
+import { ZevataTextArea } from '../../components/ZevataTextArea'
 import type { Word, WordType } from '../../types/word'
 
 export const Route = createFileRoute('/$inv/words')({
@@ -311,75 +314,54 @@ function QuotesPage() {
                 form.handleSubmit()
               }}
             >
-              <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Type Field */}
-                <form.Field
-                  name="type"
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label block">
-                        <span className="label-text">Type *</span>
-                      </label>
-                      <select
-                        className="select select-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) =>
-                          field.handleChange(e.target.value as WordType)
-                        }
-                      >
-                        <option value="">Select type...</option>
-                        {typeOptions.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                />
+              <div className="space-y-4">
+                {/* Text Inputs - Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Type Field */}
+                  <form.Field
+                    name="type"
+                    children={(field) => (
+                      <ZevataSelect
+                        field={field}
+                        label="Type"
+                        options={typeOptions.map((type) => ({
+                          value: type,
+                          label: type,
+                        }))}
+                        placeholder="Select type..."
+                        required
+                      />
+                    )}
+                  />
 
-                {/* Title Field */}
-                <form.Field
-                  name="title"
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label block">
-                        <span className="label-text">Title</span>
-                      </label>
-                      <input
+                  {/* Title Field */}
+                  <form.Field
+                    name="title"
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Title"
                         type="text"
                         placeholder="Enter title (optional)"
-                        className="input input-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
                       />
-                    </div>
-                  )}
-                />
+                    )}
+                  />
 
-                {/* Author Field */}
-                <form.Field
-                  name="author"
-                  children={(field) => (
-                    <div className="form-control">
-                      <label className="label block">
-                        <span className="label-text">Author</span>
-                      </label>
-                      <input
+                  {/* Author Field */}
+                  <form.Field
+                    name="author"
+                    children={(field) => (
+                      <ZevataInput
+                        field={field}
+                        label="Author"
                         type="text"
                         placeholder="Enter author name (optional)"
-                        className="input input-bordered"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
                       />
-                    </div>
-                  )}
-                />
+                    )}
+                  />
+                </div>
 
-                {/* Content Field */}
+                {/* Textarea - Always Full Width */}
                 <form.Field
                   name="content"
                   validators={{
@@ -390,26 +372,13 @@ function QuotesPage() {
                     },
                   }}
                   children={(field) => (
-                    <div className="form-control col-span-2">
-                      <label className="label block">
-                        <span className="label-text">Content *</span>
-                      </label>
-                      <textarea
-                        placeholder="Enter the word content..."
-                        className="textarea textarea-bordered w-full"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        rows={4}
-                      />
-                      {field.state.meta.errors.length > 0 && (
-                        <label className="label">
-                          <span className="label-text-alt text-error">
-                            {field.state.meta.errors.join(', ')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
+                    <ZevataTextArea
+                      field={field}
+                      label="Content"
+                      placeholder="Enter the word content..."
+                      rows={4}
+                      required
+                    />
                   )}
                 />
               </div>
