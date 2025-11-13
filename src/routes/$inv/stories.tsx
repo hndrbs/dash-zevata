@@ -1,106 +1,82 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
-import { Calendar, Edit, Plus, Trash2, X } from 'lucide-react'
-import PhotoUpload from '../../components/PhotoUpload'
+import { createFileRoute } from '@tanstack/react-router'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BookOpen, Calendar, Edit, Plus, Trash2, X } from 'lucide-react'
+import { useState } from 'react'
+import { del, get, post, put } from '../../lib/api'
+import type { LoveStory } from '../../types/lovestory'
 
 export const Route = createFileRoute('/$inv/stories')({
   component: StoriesPage,
 })
 
-type Story = {
-  id: string
-  title: string
-  content: string
-  date: string
-  coverImageUrl?: string
-  coverImageFile?: File | null
-}
-
 function StoriesPage() {
-  const [stories, setStories] = useState<Array<Story>>([
-    {
-      id: '1',
-      title: 'Pertemuan Pertama',
-      content:
-        'Kami pertama kali bertemu di kampus pada tahun 2018. Saat itu kami sedang mengikuti kegiatan organisasi mahasiswa dan langsung merasa ada chemistry yang spesial.',
-      date: '2018-01-01',
-      coverImageUrl:
-        'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=300&fit=crop',
-    },
-    {
-      id: '2',
-      title: 'Tunangan',
-      content:
-        'Setelah 3 tahun menjalin hubungan, akhirnya kami memutuskan untuk bertunangan pada bulan November 2021. Momen ini sangat berarti bagi kami dan keluarga.',
-      date: '2021-11-01',
-      coverImageUrl:
-        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&h=300&fit=crop',
-    },
-    {
-      id: '3',
-      title: 'Hari Bahagia',
-      content:
-        'Akhirnya tiba juga hari yang kami tunggu-tunggu. Dengan restu dari kedua orang tua, kami akan melangsungkan pernikahan pada tanggal 25 Desember 2024. Semoga menjadi awal dari kehidupan berumah tangga yang penuh berkah.',
-      date: '2024-12-25',
-    },
-  ])
+  const { inv } = Route.useParams()
+  const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingStory, setEditingStory] = useState<Story | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [editingStory, setEditingStory] = useState<LoveStory | null>(null)
+
+  // Query for fetching love stories
+  const {
+    data: stories = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['lovestories', inv],
+    queryFn: () => get<Array<LoveStory>>({ path: `lovestory/${inv}` }),
+  })
+
+  // Mutation for creating a love story
+  const createMutation = useMutation({
+    mutationFn: (storyData: Omit<LoveStory, 'id'>) =>
+      post<LoveStory>(`lovestory/${inv}`, storyData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lovestories', inv] })
+      handleCloseModal()
+    },
+  })
+
+  // Mutation for updating a love story
+  const updateMutation = useMutation({
+    mutationFn: ({
+      storyId,
+      storyData,
+    }: {
+      storyId: string
+      storyData: Omit<LoveStory, 'id'>
+    }) => put<LoveStory>(`lovestory/${inv}/${storyId}`, storyData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lovestories', inv] })
+      handleCloseModal()
+    },
+  })
+
+  // Mutation for deleting a love story
+  const deleteMutation = useMutation({
+    mutationFn: (storyId: string) => del(`lovestory/${inv}/${storyId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lovestories', inv] })
+    },
+  })
 
   const form = useForm({
     defaultValues: {
       title: '',
-      content: '',
-      date: '',
-      coverImageUrl: '',
-      coverImageFile: null as File | null,
+      storyContent: '',
+      storyDate: new Date(),
+      invId: inv,
+      createdAt: new Date(),
     },
-    onSubmit: async ({ value }) => {
-      // If there's a cover image file to upload, handle it first
-      let coverImageUrl = value.coverImageUrl
-
-      if (value.coverImageFile) {
-        try {
-          setIsUploading(true)
-          setUploadError(null)
-          coverImageUrl = await uploadToCloudflareR2(value.coverImageFile)
-        } catch (error) {
-          setUploadError(
-            error instanceof Error ? error.message : 'Upload failed',
-          )
-          setIsUploading(false)
-          return
-        }
+    onSubmit: ({ value }) => {
+      const storyData = {
+        ...value,
+        storyDate: new Date(value.storyDate),
       }
-
       if (editingStory) {
-        // Update existing story
-        setStories(
-          stories.map((s) =>
-            s.id === editingStory.id
-              ? {
-                  ...value,
-                  coverImageUrl,
-                  id: editingStory.id,
-                }
-              : s,
-          ),
-        )
+        updateMutation.mutate({ storyId: editingStory.id, storyData })
       } else {
-        // Add new story
-        const newStory: Story = {
-          ...value,
-          coverImageUrl,
-          id: Date.now().toString(),
-          coverImageFile: null,
-        }
-        setStories([...stories, newStory])
+        createMutation.mutate(storyData)
       }
-      setIsUploading(false)
-      handleCloseModal()
     },
   })
 
@@ -110,186 +86,149 @@ function StoriesPage() {
     setIsModalOpen(true)
   }
 
-  const handleEditStory = (story: Story) => {
+  const handleEditStory = (story: LoveStory) => {
     setEditingStory(story)
     form.setFieldValue('title', story.title)
-    form.setFieldValue('content', story.content)
-    form.setFieldValue('date', story.date)
-    form.setFieldValue('coverImageUrl', story.coverImageUrl || '')
-    form.setFieldValue('coverImageFile', null)
+    form.setFieldValue('storyContent', story.storyContent)
+    form.setFieldValue('storyDate', new Date(story.storyDate))
     setIsModalOpen(true)
   }
 
   const handleDeleteStory = (storyId: string) => {
-    setStories(stories.filter((s) => s.id !== storyId))
+    if (confirm('Are you sure you want to delete this love story?')) {
+      deleteMutation.mutate(storyId)
+    }
   }
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setEditingStory(null)
-    setIsUploading(false)
-    setUploadError(null)
     form.reset()
   }
 
-  // Get presigned URL from backend
-  const getPresignedUrl = async (
-    fileName: string,
-    contentType: string,
-  ): Promise<string> => {
-    const response = await fetch('/api/upload/presigned-url', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        fileName,
-        contentType,
-      }),
-    })
+  const isMutationLoading =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending
 
-    if (!response.ok) {
-      throw new Error('Failed to get presigned URL')
-    }
-
-    const data = await response.json()
-    return data.url
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    )
   }
 
-  // Upload to Cloudflare R2 using presigned URL
-  const uploadToCloudflareR2 = async (file: File): Promise<string> => {
-    // Generate unique filename
-    const timestamp = Date.now()
-    const fileName = `stories/${timestamp}-${Math.random().toString(36).substring(2)}.webp`
-
-    // Get presigned URL
-    const presignedUrl = await getPresignedUrl(fileName, 'image/webp')
-
-    // Upload to R2
-    const response = await fetch(presignedUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': file.type,
-      },
-      body: file,
-    })
-
-    if (!response.ok) {
-      throw new Error(`Upload failed with status ${response.status}`)
-    }
-
-    // Extract the public URL from presigned URL (remove query parameters)
-    return presignedUrl.split('?')[0]
-  }
-
-  const handlePhotoProcessed = (file: File) => {
-    form.setFieldValue('coverImageFile', file)
-    form.setFieldValue('coverImageUrl', '') // Clear existing URL if any
-  }
-
-  const handlePhotoError = (error: string) => {
-    setUploadError(error)
-  }
-
-  const formatStoryDate = (story: Story) => {
-    try {
-      const date = new Date(story.date)
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-      }
-      return story.date
-    } catch {
-      return story.date
-    }
-  }
-
-  const validateDate = (date: string): string | undefined => {
-    if (!date) return 'Date is required'
-
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!dateRegex.test(date)) {
-      return 'Invalid date format. Use YYYY-MM-DD'
-    }
-
-    const testDate = new Date(date)
-    if (isNaN(testDate.getTime())) {
-      return 'Invalid date'
-    }
-
-    return undefined
+  if (error) {
+    return (
+      <div className="alert alert-error">
+        <span>Error loading love stories: {error.message}</span>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-base-100 p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Stories</h1>
-        <button onClick={handleAddStory} className="btn btn-primary">
-          <Plus size={20} />
-          Add Story
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <BookOpen className="w-8 h-8 text-primary" />
+            Our Love Stories
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Share and cherish your special moments together
+          </p>
+        </div>
+        <button
+          onClick={handleAddStory}
+          className="btn btn-primary"
+          disabled={isMutationLoading}
+        >
+          <Plus className="w-4 h-4" />
+          Add Love Story
         </button>
       </div>
 
-      {/* Stories List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {stories.map((story) => (
-          <div key={story.id} className="card bg-base-200 shadow-sm">
-            {story.coverImageUrl && (
-              <figure className="h-48">
-                <img
-                  src={story.coverImageUrl}
-                  alt={story.title}
-                  className="w-full h-full object-cover"
-                />
-              </figure>
-            )}
-            <div className="card-body">
-              <h3 className="card-title text-lg">{story.title}</h3>
-
-              <div className="flex items-center gap-2 text-sm text-base-content/70 mb-3">
-                <Calendar size={16} />
-                <span>{formatStoryDate(story)}</span>
-              </div>
-
-              <p className="text-sm line-clamp-3 mb-4">{story.content}</p>
-
-              <div className="card-actions justify-end">
-                <button
-                  onClick={() => handleEditStory(story)}
-                  className="btn btn-ghost btn-sm"
-                >
-                  <Edit size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteStory(story.id)}
-                  className="btn btn-ghost btn-sm text-error"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
+      {stories.length === 0 ? (
+        <div className="text-center py-12">
+          <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-500 mb-2">
+            No love stories yet
+          </h3>
+          <p className="text-gray-400 mb-4">
+            Start documenting your beautiful journey together
+          </p>
+          <button
+            onClick={handleAddStory}
+            className="btn btn-primary"
+            disabled={isMutationLoading}
+          >
+            <Plus className="w-4 h-4" />
+            Create Your First Love Story
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          {stories.map((story) => (
+            <div key={story.id} className="card bg-base-100 shadow-lg">
+              <div className="card-body">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="card-title text-xl">{story.title}</h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>
+                        {new Date(story.storyDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditStory(story)}
+                      className="btn btn-sm btn-outline"
+                      disabled={isMutationLoading}
+                    >
+                      <Edit className="w-3 h-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteStory(story.id)}
+                      className="btn btn-sm btn-error"
+                      disabled={isMutationLoading}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                <div className="prose max-w-none">
+                  <p className="whitespace-pre-wrap">{story.storyContent}</p>
+                </div>
+                <div className="card-actions justify-end mt-4">
+                  <div className="text-xs text-gray-400">
+                    Created {new Date(story.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Add/Edit Story Modal */}
+      {/* Modal */}
       {isModalOpen && (
         <div className="modal modal-open">
           <div className="modal-box max-w-2xl">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">
-                {editingStory ? 'Edit Story' : 'Add Story'}
+                {editingStory ? 'Edit Love Story' : 'Add Love Story'}
               </h3>
               <button
                 onClick={handleCloseModal}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-sm btn-circle btn-ghost"
+                disabled={isMutationLoading}
               >
-                <X size={20} />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -300,24 +239,22 @@ function StoriesPage() {
                 form.handleSubmit()
               }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Title Field */}
+              <div className="space-y-4">
                 <form.Field
                   name="title"
                   validators={{
-                    onChange: ({ value }) => {
-                      if (!value) return 'Title is required'
-                      return undefined
-                    },
+                    onChange: ({ value }) =>
+                      !value ? 'Title is required' : undefined,
                   }}
-                  children={(field) => (
+                >
+                  {(field) => (
                     <div className="form-control">
-                      <label className="label block">
+                      <label className="label">
                         <span className="label-text">Title *</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="Enter story title"
+                        placeholder="Enter a title for your love story..."
                         className="input input-bordered"
                         value={field.state.value}
                         onBlur={field.handleBlur}
@@ -332,24 +269,39 @@ function StoriesPage() {
                       )}
                     </div>
                   )}
-                />
-                {/* Date Field */}
+                </form.Field>
+
                 <form.Field
-                  name="date"
+                  name="storyDate"
                   validators={{
-                    onChange: ({ value }) => validateDate(value),
+                    onChange: ({ value }) => {
+                      const date =
+                        value instanceof Date ? value : new Date(value)
+                      return isNaN(date.getTime())
+                        ? 'Story date is required'
+                        : undefined
+                    },
                   }}
-                  children={(field) => (
+                >
+                  {(field) => (
                     <div className="form-control">
-                      <label className="label block">
-                        <span className="label-text">Date *</span>
+                      <label className="label">
+                        <span className="label-text">Story Date *</span>
                       </label>
                       <input
                         type="date"
                         className="input input-bordered"
-                        value={field.state.value}
+                        value={
+                          field.state.value instanceof Date
+                            ? field.state.value.toISOString().split('T')[0]
+                            : new Date(field.state.value)
+                                .toISOString()
+                                .split('T')[0]
+                        }
                         onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
+                        onChange={(e) =>
+                          field.handleChange(new Date(e.target.value))
+                        }
                       />
                       {field.state.meta.errors.length > 0 && (
                         <label className="label">
@@ -360,30 +312,26 @@ function StoriesPage() {
                       )}
                     </div>
                   )}
-                />
+                </form.Field>
 
-                {/* Content Field */}
                 <form.Field
-                  name="content"
+                  name="storyContent"
                   validators={{
-                    onChange: ({ value }) => {
-                      if (!value) return 'Content is required'
-                      if (value.length < 20) return 'Content is too short'
-                      return undefined
-                    },
+                    onChange: ({ value }) =>
+                      !value ? 'Story content is required' : undefined,
                   }}
-                  children={(field) => (
-                    <div className="form-control md:col-span-2">
-                      <label className="label block">
+                >
+                  {(field) => (
+                    <div className="form-control">
+                      <label className="label">
                         <span className="label-text">Story Content *</span>
                       </label>
                       <textarea
-                        placeholder="Tell your story..."
-                        className="textarea textarea-bordered w-full"
+                        placeholder="Share your beautiful story..."
+                        className="textarea textarea-bordered h-32"
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
-                        rows={6}
                       />
                       {field.state.meta.errors.length > 0 && (
                         <label className="label">
@@ -394,34 +342,7 @@ function StoriesPage() {
                       )}
                     </div>
                   )}
-                />
-
-                {/* Cover Image Upload */}
-                <div className="form-control md:col-span-2">
-                  <label className="label block">
-                    <span className="label-text">Cover Image</span>
-                  </label>
-                  <PhotoUpload
-                    onFileProcessed={handlePhotoProcessed}
-                    onError={handlePhotoError}
-                    maxSize={5 * 1024 * 1024} // 5MB
-                    acceptedTypes={['image/jpeg', 'image/png', 'image/webp']}
-                  />
-                  {uploadError && (
-                    <div className="mt-2">
-                      <p className="text-sm text-error">{uploadError}</p>
-                    </div>
-                  )}
-                  {form.state.values.coverImageUrl &&
-                    !form.state.values.coverImageFile && (
-                      <div className="mt-2">
-                        <p className="text-sm text-success">
-                          Current cover image URL:{' '}
-                          {form.state.values.coverImageUrl}
-                        </p>
-                      </div>
-                    )}
-                </div>
+                </form.Field>
               </div>
 
               <div className="modal-action">
@@ -429,15 +350,22 @@ function StoriesPage() {
                   type="button"
                   onClick={handleCloseModal}
                   className="btn btn-ghost"
+                  disabled={isMutationLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={form.state.canSubmit === false || isUploading}
+                  disabled={isMutationLoading || !form.state.canSubmit}
                 >
-                  {editingStory ? 'Update' : 'Add'} Story
+                  {isMutationLoading ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : editingStory ? (
+                    'Update Story'
+                  ) : (
+                    'Create Story'
+                  )}
                 </button>
               </div>
             </form>
