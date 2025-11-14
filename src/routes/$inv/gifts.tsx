@@ -10,7 +10,7 @@ function GiftsPage() {
 
   const tabs = [
     {
-      id: 'transfer',
+      id: '',
       label: 'Money Transfer',
       description: 'Manage money transfer options',
     },
@@ -43,6 +43,9 @@ function GiftsPage() {
               className="tab"
               activeProps={{
                 className: 'tab tab-active text-lg font-bold underline-primary',
+              }}
+              activeOptions={{
+                exact: tab.id === '',
               }}
             >
               {tab.label}

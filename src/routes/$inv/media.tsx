@@ -1,9 +1,4 @@
-import {
-  Link,
-  Outlet,
-  createFileRoute,
-  useLocation,
-} from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { Image, Music, Radio, Video } from 'lucide-react'
 
 export const Route = createFileRoute('/$inv/media')({
@@ -12,43 +7,29 @@ export const Route = createFileRoute('/$inv/media')({
 
 function MediaPage() {
   const { inv } = Route.useParams()
-  const currentPath = useLocation().pathname
 
   const tabs = [
     {
-      id: 'galery',
+      id: '',
       label: 'Galleries',
       icon: Image,
-      path: '/$inv/media/gallery',
     },
     {
       id: 'music',
       label: 'Music',
       icon: Music,
-      path: '/$inv/media/music',
     },
     {
       id: 'video',
       label: 'Video',
       icon: Video,
-      path: '/$inv/media/video',
     },
     {
       id: 'streaming',
       label: 'Streaming',
       icon: Radio,
-      path: '/$inv/media/streaming',
     },
   ]
-
-  const getActiveTab = () => {
-    return (
-      tabs.find((tab) => currentPath === tab.path.replace('$inv', inv))?.id ||
-      ''
-    )
-  }
-
-  const activeTab = getActiveTab()
 
   return (
     <div className="min-h-screen bg-base-100 p-6">
@@ -62,14 +43,15 @@ function MediaPage() {
         <div className="tabs tabs-boxed mb-8">
           {tabs.map((tab) => {
             const Icon = tab.icon
-            const isActive = activeTab === tab.id
-
             return (
               <Link
                 key={tab.id}
-                to={tab.path}
+                to={tab.id}
+                from="/$inv/media"
                 params={{ inv }}
-                className={`tab ${isActive ? 'tab-active' : ''}`}
+                className="tab"
+                activeProps={{ className: 'tab-active' }}
+                activeOptions={{ exact: tab.id === '' }}
               >
                 <Icon size={18} className="mr-2" />
                 {tab.label}

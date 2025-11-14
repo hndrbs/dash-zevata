@@ -10,7 +10,7 @@ import { del, get, post, put } from '../../../lib/api'
 import { GiftType } from '../../../types/gift'
 import type { Gift } from '../../../types/gift'
 
-export const Route = createFileRoute('/$inv/gifts/transfer')({
+export const Route = createFileRoute('/$inv/gifts/')({
   component: TransferGiftsPage,
 })
 

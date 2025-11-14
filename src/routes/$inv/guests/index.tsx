@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import {
   Edit,
+  Filter,
   MessageCircle,
   Plus,
   Search,
@@ -12,51 +14,56 @@ import {
   X,
 } from 'lucide-react'
 import { ZevataInput } from '../../../components/ZevataInput'
-import { ZevataSelect } from '../../../components/ZevataSelect'
+import { del, get, post, put } from '../../../lib/api'
+import type { Guest } from '../../../types/guest'
 
 export const Route = createFileRoute('/$inv/guests/')({
   component: GuestListPage,
 })
 
-type Guest = {
-  id: string
-  name: string
-  phone: string
-  status: 'invited' | 'confirmed' | 'maybe' | 'declined'
-}
-
 function GuestListPage() {
-  const [guests, setGuests] = useState<Array<Guest>>([
-    {
-      id: '1',
-      name: 'John Doe',
-      phone: '+6281234567890',
-      status: 'confirmed',
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      phone: '+6281345678901',
-      status: 'invited',
-    },
-    {
-      id: '3',
-      name: 'Michael Johnson',
-      phone: '+6281456789012',
-      status: 'maybe',
-    },
-    {
-      id: '4',
-      name: 'Sarah Wilson',
-      phone: '+6281567890123',
-      status: 'declined',
-    },
-  ])
-
+  const { inv } = Route.useParams()
+  const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingGuest, setEditingGuest] = useState<Guest | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'Pending' | 'Invited'
+  >('all')
+
+  const {
+    data: guests = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['guests', inv],
+    queryFn: () => get<Array<Guest>>({ path: `guest/${inv}` }),
+  })
+
+  const createGuestMutation = useMutation({
+    mutationFn: (guestData: Omit<Guest, 'id' | 'createdAt'>) =>
+      post<Guest>(`guest/${inv}`, guestData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guests', inv] })
+      handleCloseModal()
+    },
+  })
+
+  const updateGuestMutation = useMutation({
+    mutationFn: (guestData: Guest) => put<Guest>(`guest/${inv}`, guestData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guests', inv] })
+      handleCloseModal()
+    },
+  })
+
+  const deleteGuestMutation = useMutation({
+    mutationFn: (id: string) => del(`guest/${inv}/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guests', inv] })
+    },
+  })
 
   const handleAddGuest = () => {
     setEditingGuest(null)
@@ -69,28 +76,30 @@ function GuestListPage() {
   }
 
   const handleDeleteGuest = (id: string) => {
-    setGuests(guests.filter((guest) => guest.id !== id))
+    if (confirm('Are you sure you want to delete this guest?')) {
+      deleteGuestMutation.mutate(id)
+    }
   }
 
-  const handleSaveGuest = (guestData: Omit<Guest, 'id'>) => {
+  const handleSaveGuest = (guestData: Omit<Guest, 'id' | 'createdAt'>) => {
     if (editingGuest) {
-      setGuests(
-        guests.map((g) =>
-          g.id === editingGuest.id ? { ...guestData, id: editingGuest.id } : g,
-        ),
-      )
-    } else {
-      const newGuest: Guest = {
+      updateGuestMutation.mutate({
         ...guestData,
-        id: Date.now().toString(),
-      }
-      setGuests([...guests, newGuest])
+        id: editingGuest.id,
+        createdAt: editingGuest.createdAt,
+      })
+    } else {
+      createGuestMutation.mutate(guestData)
     }
+  }
+
+  const handleCloseModal = () => {
     setIsModalOpen(false)
     setEditingGuest(null)
   }
 
-  const handleWhatsAppClick = (phone: string) => {
+  const handleWhatsAppClick = (phone?: string) => {
+    if (!phone) return
     const message = 'Hello! This is regarding the wedding invitation.'
     const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
@@ -98,22 +107,23 @@ function GuestListPage() {
 
   const handleCSVImport = (csvText: string) => {
     const lines = csvText.split('\n').filter((line) => line.trim())
-    const importedGuests: Array<Guest> = []
+    const importedGuests: Array<Omit<Guest, 'id' | 'createdAt'>> = []
 
     for (let i = 1; i < lines.length; i++) {
-      // Skip header
       const [name, phone] = lines[i].split(',')
-      if (name && phone) {
+      if (name) {
         importedGuests.push({
-          id: Date.now().toString() + i,
+          invId: inv,
           name: name.trim(),
-          phone: phone.trim(),
-          status: 'invited',
+          phone: phone ? phone.trim() : undefined,
         })
       }
     }
 
-    setGuests([...guests, ...importedGuests])
+    // Import each guest individually
+    importedGuests.forEach((guest) => {
+      createGuestMutation.mutate(guest)
+    })
     setIsImportModalOpen(false)
   }
 
@@ -129,12 +139,10 @@ function GuestListPage() {
     }
   }
 
-  const getStatusBadge = (status: Guest['status']) => {
+  const getStatusBadge = (status: 'Pending' | 'Invited') => {
     const statusConfig = {
-      invited: { class: 'badge-warning', label: 'Invited' },
-      confirmed: { class: 'badge-success', label: 'Confirmed' },
-      maybe: { class: 'badge-info', label: 'Maybe' },
-      declined: { class: 'badge-error', label: 'Not Coming' },
+      Pending: { class: 'badge-warning', label: 'Pending' },
+      Invited: { class: 'badge-success', label: 'Invited' },
     }
     const config = statusConfig[status]
     return <span className={`badge ${config.class}`}>{config.label}</span>
@@ -143,20 +151,53 @@ function GuestListPage() {
   const getStatusCounts = () => {
     const counts = {
       total: guests.length,
-      confirmed: guests.filter((g) => g.status === 'confirmed').length,
-      maybe: guests.filter((g) => g.status === 'maybe').length,
-      declined: guests.filter((g) => g.status === 'declined').length,
+      invited: guests.filter((g) => g.invId === inv).length,
+      pending: guests.filter((g) => g.invId === inv).length, // All guests are pending by default in new contract
     }
     return counts
   }
 
-  const filteredGuests = guests.filter(
-    (guest) =>
+  const filteredGuests = guests.filter((guest) => {
+    const matchesSearch =
       guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guest.phone.includes(searchTerm),
-  )
+      (guest.phone && guest.phone.includes(searchTerm))
+
+    const matchesStatus = statusFilter === 'all' || guest.invId === inv // Simplified status filter for new contract
+
+    return matchesSearch && matchesStatus
+  })
 
   const statusCounts = getStatusCounts()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-base-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="skeleton h-8 w-64 mb-2"></div>
+          <div className="skeleton h-4 w-96 mb-8"></div>
+          <div className="skeleton h-12 w-full mb-6"></div>
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton h-24"></div>
+            ))}
+          </div>
+          <div className="skeleton h-96"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-base-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="alert alert-error">
+            <span>Error loading guests: {error.message}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -178,29 +219,24 @@ function GuestListPage() {
       </div>
 
       {/* Status Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div className="stat bg-base-100 rounded-lg">
           <div className="stat-title">Total Guests</div>
           <div className="stat-value text-primary">{statusCounts.total}</div>
         </div>
         <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-title">Confirmed</div>
-          <div className="stat-value text-success">
-            {statusCounts.confirmed}
-          </div>
+          <div className="stat-title">Invited</div>
+          <div className="stat-value text-success">{statusCounts.invited}</div>
         </div>
         <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-title">Maybe</div>
-          <div className="stat-value text-info">{statusCounts.maybe}</div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-title">Not Coming</div>
-          <div className="stat-value text-error">{statusCounts.declined}</div>
+          <div className="stat-title">Pending</div>
+          <div className="stat-value text-warning">{statusCounts.pending}</div>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* Search and Filter Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* Search */}
         <div className="relative">
           <Search
             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/50"
@@ -214,13 +250,34 @@ function GuestListPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
+        {/* Status Filter */}
+        <div className="relative">
+          <Filter
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/50"
+            size={20}
+          />
+          <select
+            className="select select-bordered w-full pl-10"
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as 'all' | 'Pending' | 'Invited')
+            }
+          >
+            <option value="all">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Invited">Invited</option>
+          </select>
+        </div>
       </div>
 
       {filteredGuests.length === 0 ? (
         <div className="text-center py-12">
           <Users size={64} className="mx-auto mb-4 text-base-content/50" />
           <p className="text-base-content/70 text-lg mb-4">
-            {searchTerm ? 'No guests found' : 'No guests added yet'}
+            {searchTerm || statusFilter !== 'all'
+              ? 'No guests found'
+              : 'No guests added yet'}
           </p>
           <button onClick={handleAddGuest} className="btn btn-primary">
             <Plus size={20} />
@@ -246,14 +303,23 @@ function GuestListPage() {
                     className="hover:bg-base-200 transition-colors"
                   >
                     <td className="font-medium">{guest.name}</td>
-                    <td>{guest.phone}</td>
-                    <td>{getStatusBadge(guest.status)}</td>
+                    <td>
+                      {guest.phone || (
+                        <span className="text-base-content/50">No phone</span>
+                      )}
+                    </td>
+                    <td>{getStatusBadge('Pending')}</td>
                     <td>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleWhatsAppClick(guest.phone)}
-                          className="btn btn-ghost btn-sm text-success"
-                          title="Send WhatsApp Message"
+                          className={`btn btn-ghost btn-sm ${guest.phone ? 'text-success' : 'text-base-content/30 cursor-not-allowed'}`}
+                          title={
+                            guest.phone
+                              ? 'Send WhatsApp Message'
+                              : 'No phone number'
+                          }
+                          disabled={!guest.phone}
                         >
                           <MessageCircle size={16} />
                         </button>
@@ -284,10 +350,11 @@ function GuestListPage() {
         <GuestModal
           guest={editingGuest}
           onSave={handleSaveGuest}
-          onClose={() => {
-            setIsModalOpen(false)
-            setEditingGuest(null)
-          }}
+          onClose={handleCloseModal}
+          isLoading={
+            createGuestMutation.isPending || updateGuestMutation.isPending
+          }
+          inv={inv}
         />
       )}
 
@@ -308,12 +375,12 @@ function GuestListPage() {
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-base-content/70">
-                  Upload a CSV file with columns: Name, Phone
+                  Upload a CSV file with columns: Name, Phone (optional)
                 </p>
                 <button
                   onClick={() => {
                     const csvContent =
-                      'Name,Phone\nJohn Doe,+6281234567890\nJane Smith,+6281345678901'
+                      'Name,Phone\nJohn Doe,+6281234567890\nJane Smith,+6281345678901\nFamily Group,'
                     const blob = new Blob([csvContent], { type: 'text/csv' })
                     const url = URL.createObjectURL(blob)
                     const a = document.createElement('a')
@@ -363,22 +430,31 @@ function GuestListPage() {
 
 type GuestModalProps = {
   guest: Guest | null
-  onSave: (guestData: Omit<Guest, 'id'>) => void
+  onSave: (guestData: Omit<Guest, 'id' | 'createdAt'>) => void
   onClose: () => void
+  isLoading: boolean
 }
 
-function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
+function GuestModal({
+  guest,
+  onSave,
+  onClose,
+  isLoading,
+  inv,
+}: GuestModalProps & { inv: string }) {
   const form = useForm({
     defaultValues: {
       name: guest?.name || '',
       phone: guest?.phone || '',
-      status: guest?.status || 'invited',
     },
     onSubmit: ({ value }) => {
-      if (!value.name.trim() || !value.phone.trim()) {
+      if (!value.name.trim()) {
         return
       }
-      onSave(value)
+      onSave({
+        ...value,
+        invId: inv,
+      })
     },
   })
 
@@ -402,8 +478,7 @@ function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
           }}
         >
           <div className="space-y-4">
-            {/* Text Inputs - Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <form.Field
                 name="name"
                 validators={{
@@ -423,34 +498,12 @@ function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
 
               <form.Field
                 name="phone"
-                validators={{
-                  onChange: ({ value }) =>
-                    !value ? 'Phone number is required' : undefined,
-                }}
                 children={(field) => (
                   <ZevataInput
                     field={field}
                     label="Phone Number"
                     type="tel"
-                    placeholder="+6281234567890"
-                    required
-                  />
-                )}
-              />
-
-              <form.Field
-                name="status"
-                children={(field) => (
-                  <ZevataSelect
-                    field={field}
-                    label="Status"
-                    options={[
-                      { value: 'invited', label: 'Invited' },
-                      { value: 'confirmed', label: 'Confirmed' },
-                      { value: 'maybe', label: 'Maybe' },
-                      { value: 'declined', label: 'Not Coming' },
-                    ]}
-                    className="md:col-span-2"
+                    placeholder="+6281234567890 (optional)"
                   />
                 )}
               />
@@ -461,8 +514,22 @@ function GuestModal({ guest, onSave, onClose }: GuestModalProps) {
             <button type="button" onClick={onClose} className="btn btn-ghost">
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              {guest ? 'Update' : 'Add'} Guest
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  {guest ? 'Updating...' : 'Adding...'}
+                </>
+              ) : guest ? (
+                'Update'
+              ) : (
+                'Add'
+              )}{' '}
+              Guest
             </button>
           </div>
         </form>

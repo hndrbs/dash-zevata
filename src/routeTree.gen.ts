@@ -20,13 +20,13 @@ import { Route as InvLovestoriesRouteImport } from './routes/$inv/lovestories'
 import { Route as InvGuestsRouteImport } from './routes/$inv/guests'
 import { Route as InvGiftsRouteImport } from './routes/$inv/gifts'
 import { Route as InvEventsRouteImport } from './routes/$inv/events'
+import { Route as InvMediaIndexRouteImport } from './routes/$inv/media/index'
 import { Route as InvGuestsIndexRouteImport } from './routes/$inv/guests/index'
+import { Route as InvGiftsIndexRouteImport } from './routes/$inv/gifts/index'
 import { Route as InvMediaVideoRouteImport } from './routes/$inv/media/video'
 import { Route as InvMediaStreamingRouteImport } from './routes/$inv/media/streaming'
 import { Route as InvMediaMusicRouteImport } from './routes/$inv/media/music'
-import { Route as InvMediaGalleryRouteImport } from './routes/$inv/media/gallery'
 import { Route as InvGuestsWishesRouteImport } from './routes/$inv/guests/wishes'
-import { Route as InvGiftsTransferRouteImport } from './routes/$inv/gifts/transfer'
 import { Route as InvGiftsPackageRouteImport } from './routes/$inv/gifts/package'
 
 const InvRoute = InvRouteImport.update({
@@ -84,10 +84,20 @@ const InvEventsRoute = InvEventsRouteImport.update({
   path: '/events',
   getParentRoute: () => InvRoute,
 } as any)
+const InvMediaIndexRoute = InvMediaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => InvMediaRoute,
+} as any)
 const InvGuestsIndexRoute = InvGuestsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => InvGuestsRoute,
+} as any)
+const InvGiftsIndexRoute = InvGiftsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => InvGiftsRoute,
 } as any)
 const InvMediaVideoRoute = InvMediaVideoRouteImport.update({
   id: '/video',
@@ -104,20 +114,10 @@ const InvMediaMusicRoute = InvMediaMusicRouteImport.update({
   path: '/music',
   getParentRoute: () => InvMediaRoute,
 } as any)
-const InvMediaGalleryRoute = InvMediaGalleryRouteImport.update({
-  id: '/gallery',
-  path: '/gallery',
-  getParentRoute: () => InvMediaRoute,
-} as any)
 const InvGuestsWishesRoute = InvGuestsWishesRouteImport.update({
   id: '/wishes',
   path: '/wishes',
   getParentRoute: () => InvGuestsRoute,
-} as any)
-const InvGiftsTransferRoute = InvGiftsTransferRouteImport.update({
-  id: '/transfer',
-  path: '/transfer',
-  getParentRoute: () => InvGiftsRoute,
 } as any)
 const InvGiftsPackageRoute = InvGiftsPackageRouteImport.update({
   id: '/package',
@@ -138,32 +138,30 @@ export interface FileRoutesByFullPath {
   '/$inv/words': typeof InvWordsRoute
   '/$inv/': typeof InvIndexRoute
   '/$inv/gifts/package': typeof InvGiftsPackageRoute
-  '/$inv/gifts/transfer': typeof InvGiftsTransferRoute
   '/$inv/guests/wishes': typeof InvGuestsWishesRoute
-  '/$inv/media/gallery': typeof InvMediaGalleryRoute
   '/$inv/media/music': typeof InvMediaMusicRoute
   '/$inv/media/streaming': typeof InvMediaStreamingRoute
   '/$inv/media/video': typeof InvMediaVideoRoute
+  '/$inv/gifts/': typeof InvGiftsIndexRoute
   '/$inv/guests/': typeof InvGuestsIndexRoute
+  '/$inv/media/': typeof InvMediaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$inv/events': typeof InvEventsRoute
-  '/$inv/gifts': typeof InvGiftsRouteWithChildren
   '/$inv/lovestories': typeof InvLovestoriesRoute
-  '/$inv/media': typeof InvMediaRouteWithChildren
   '/$inv/profile': typeof InvProfileRoute
   '/$inv/themes': typeof InvThemesRoute
   '/$inv/words': typeof InvWordsRoute
   '/$inv': typeof InvIndexRoute
   '/$inv/gifts/package': typeof InvGiftsPackageRoute
-  '/$inv/gifts/transfer': typeof InvGiftsTransferRoute
   '/$inv/guests/wishes': typeof InvGuestsWishesRoute
-  '/$inv/media/gallery': typeof InvMediaGalleryRoute
   '/$inv/media/music': typeof InvMediaMusicRoute
   '/$inv/media/streaming': typeof InvMediaStreamingRoute
   '/$inv/media/video': typeof InvMediaVideoRoute
+  '/$inv/gifts': typeof InvGiftsIndexRoute
   '/$inv/guests': typeof InvGuestsIndexRoute
+  '/$inv/media': typeof InvMediaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -179,13 +177,13 @@ export interface FileRoutesById {
   '/$inv/words': typeof InvWordsRoute
   '/$inv/': typeof InvIndexRoute
   '/$inv/gifts/package': typeof InvGiftsPackageRoute
-  '/$inv/gifts/transfer': typeof InvGiftsTransferRoute
   '/$inv/guests/wishes': typeof InvGuestsWishesRoute
-  '/$inv/media/gallery': typeof InvMediaGalleryRoute
   '/$inv/media/music': typeof InvMediaMusicRoute
   '/$inv/media/streaming': typeof InvMediaStreamingRoute
   '/$inv/media/video': typeof InvMediaVideoRoute
+  '/$inv/gifts/': typeof InvGiftsIndexRoute
   '/$inv/guests/': typeof InvGuestsIndexRoute
+  '/$inv/media/': typeof InvMediaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -202,32 +200,30 @@ export interface FileRouteTypes {
     | '/$inv/words'
     | '/$inv/'
     | '/$inv/gifts/package'
-    | '/$inv/gifts/transfer'
     | '/$inv/guests/wishes'
-    | '/$inv/media/gallery'
     | '/$inv/media/music'
     | '/$inv/media/streaming'
     | '/$inv/media/video'
+    | '/$inv/gifts/'
     | '/$inv/guests/'
+    | '/$inv/media/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$inv/events'
-    | '/$inv/gifts'
     | '/$inv/lovestories'
-    | '/$inv/media'
     | '/$inv/profile'
     | '/$inv/themes'
     | '/$inv/words'
     | '/$inv'
     | '/$inv/gifts/package'
-    | '/$inv/gifts/transfer'
     | '/$inv/guests/wishes'
-    | '/$inv/media/gallery'
     | '/$inv/media/music'
     | '/$inv/media/streaming'
     | '/$inv/media/video'
+    | '/$inv/gifts'
     | '/$inv/guests'
+    | '/$inv/media'
   id:
     | '__root__'
     | '/'
@@ -242,13 +238,13 @@ export interface FileRouteTypes {
     | '/$inv/words'
     | '/$inv/'
     | '/$inv/gifts/package'
-    | '/$inv/gifts/transfer'
     | '/$inv/guests/wishes'
-    | '/$inv/media/gallery'
     | '/$inv/media/music'
     | '/$inv/media/streaming'
     | '/$inv/media/video'
+    | '/$inv/gifts/'
     | '/$inv/guests/'
+    | '/$inv/media/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -335,12 +331,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvEventsRouteImport
       parentRoute: typeof InvRoute
     }
+    '/$inv/media/': {
+      id: '/$inv/media/'
+      path: '/'
+      fullPath: '/$inv/media/'
+      preLoaderRoute: typeof InvMediaIndexRouteImport
+      parentRoute: typeof InvMediaRoute
+    }
     '/$inv/guests/': {
       id: '/$inv/guests/'
       path: '/'
       fullPath: '/$inv/guests/'
       preLoaderRoute: typeof InvGuestsIndexRouteImport
       parentRoute: typeof InvGuestsRoute
+    }
+    '/$inv/gifts/': {
+      id: '/$inv/gifts/'
+      path: '/'
+      fullPath: '/$inv/gifts/'
+      preLoaderRoute: typeof InvGiftsIndexRouteImport
+      parentRoute: typeof InvGiftsRoute
     }
     '/$inv/media/video': {
       id: '/$inv/media/video'
@@ -363,26 +373,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvMediaMusicRouteImport
       parentRoute: typeof InvMediaRoute
     }
-    '/$inv/media/gallery': {
-      id: '/$inv/media/gallery'
-      path: '/gallery'
-      fullPath: '/$inv/media/gallery'
-      preLoaderRoute: typeof InvMediaGalleryRouteImport
-      parentRoute: typeof InvMediaRoute
-    }
     '/$inv/guests/wishes': {
       id: '/$inv/guests/wishes'
       path: '/wishes'
       fullPath: '/$inv/guests/wishes'
       preLoaderRoute: typeof InvGuestsWishesRouteImport
       parentRoute: typeof InvGuestsRoute
-    }
-    '/$inv/gifts/transfer': {
-      id: '/$inv/gifts/transfer'
-      path: '/transfer'
-      fullPath: '/$inv/gifts/transfer'
-      preLoaderRoute: typeof InvGiftsTransferRouteImport
-      parentRoute: typeof InvGiftsRoute
     }
     '/$inv/gifts/package': {
       id: '/$inv/gifts/package'
@@ -396,12 +392,12 @@ declare module '@tanstack/react-router' {
 
 interface InvGiftsRouteChildren {
   InvGiftsPackageRoute: typeof InvGiftsPackageRoute
-  InvGiftsTransferRoute: typeof InvGiftsTransferRoute
+  InvGiftsIndexRoute: typeof InvGiftsIndexRoute
 }
 
 const InvGiftsRouteChildren: InvGiftsRouteChildren = {
   InvGiftsPackageRoute: InvGiftsPackageRoute,
-  InvGiftsTransferRoute: InvGiftsTransferRoute,
+  InvGiftsIndexRoute: InvGiftsIndexRoute,
 }
 
 const InvGiftsRouteWithChildren = InvGiftsRoute._addFileChildren(
@@ -423,17 +419,17 @@ const InvGuestsRouteWithChildren = InvGuestsRoute._addFileChildren(
 )
 
 interface InvMediaRouteChildren {
-  InvMediaGalleryRoute: typeof InvMediaGalleryRoute
   InvMediaMusicRoute: typeof InvMediaMusicRoute
   InvMediaStreamingRoute: typeof InvMediaStreamingRoute
   InvMediaVideoRoute: typeof InvMediaVideoRoute
+  InvMediaIndexRoute: typeof InvMediaIndexRoute
 }
 
 const InvMediaRouteChildren: InvMediaRouteChildren = {
-  InvMediaGalleryRoute: InvMediaGalleryRoute,
   InvMediaMusicRoute: InvMediaMusicRoute,
   InvMediaStreamingRoute: InvMediaStreamingRoute,
   InvMediaVideoRoute: InvMediaVideoRoute,
+  InvMediaIndexRoute: InvMediaIndexRoute,
 }
 
 const InvMediaRouteWithChildren = InvMediaRoute._addFileChildren(

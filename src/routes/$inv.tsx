@@ -33,7 +33,7 @@ export const menuItems = [
     icon: Users,
   },
   {
-    id: 'media/gallery',
+    id: 'media',
     label: 'Media',
     icon: Image,
   },
@@ -47,7 +47,7 @@ export const menuItems = [
     label: 'Themes',
     icon: Palette,
   },
-  { id: 'gifts/transfer', label: 'Gifts', icon: Gift },
+  { id: 'gifts', label: 'Gifts', icon: Gift },
   {
     id: 'lovestories',
     label: 'Stories',
@@ -124,8 +124,10 @@ export default function InvLayout() {
                     params={{ inv }}
                     onClick={() => setIsDrawerOpen(false)}
                     activeProps={{
-                      className:
-                        item.id === '' ? '' : 'bg-primary text-primary-content',
+                      className: 'bg-primary text-primary-content',
+                    }}
+                    activeOptions={{
+                      exact: item.id === '',
                     }}
                     className="flex items-center gap-3 p-3 rounded-lg transition-colors"
                   >

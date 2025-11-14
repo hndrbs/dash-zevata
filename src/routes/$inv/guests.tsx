@@ -1,9 +1,4 @@
-import {
-  Link,
-  Outlet,
-  createFileRoute,
-  useLocation,
-} from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { MessageSquare, Users } from 'lucide-react'
 
 export const Route = createFileRoute('/$inv/guests')({
@@ -12,14 +7,13 @@ export const Route = createFileRoute('/$inv/guests')({
 
 function GuestsPage() {
   const { inv } = Route.useParams()
-  const currentPath = useLocation().pathname
 
   const tabs = [
     {
       id: '',
       label: 'Guest List',
       icon: Users,
-      path: '/$inv/guests',
+      path: '/$inv/guests/list',
     },
     {
       id: 'wishes',
@@ -28,15 +22,6 @@ function GuestsPage() {
       path: '/$inv/guests/wishes',
     },
   ]
-
-  const getActiveTab = () => {
-    return (
-      tabs.find((tab) => currentPath === tab.path.replace('$inv', inv))?.id ||
-      ''
-    )
-  }
-
-  const activeTab = getActiveTab()
 
   return (
     <div className="min-h-screen bg-base-100 p-6">
@@ -50,14 +35,18 @@ function GuestsPage() {
         <div className="tabs tabs-boxed mb-8">
           {tabs.map((tab) => {
             const Icon = tab.icon
-            const isActive = activeTab === tab.id
 
             return (
               <Link
                 key={tab.id}
-                to={tab.path}
+                from="/$inv/guests"
+                to={tab.id}
                 params={{ inv }}
-                className={`tab ${isActive ? 'tab-active' : ''}`}
+                activeProps={{ className: 'tab-active' }}
+                className="tab"
+                activeOptions={{
+                  exact: tab.id === '',
+                }}
               >
                 <Icon size={18} className="mr-2" />
                 {tab.label}
